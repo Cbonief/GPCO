@@ -106,6 +106,8 @@ class GeneticOptimizer:
                 feasible = True
         auxiliary_inductor = Inductor(core, cable, n, ncond)
 
+        #This is a test
+
         # dissipators = [np.random.choice(self.Dissipators), np.random.choice(self.Dissipators)]
         new_circuit = BoostHalfBridgeInverter(transformer, entrance_inductor, auxiliary_inductor, self.CircuitFeatures, switches, diodes, capacitors)
         return new_circuit
