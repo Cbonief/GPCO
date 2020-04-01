@@ -102,7 +102,7 @@ class GeneticOptimizer:
             cable = np.random.choice(self.Cables)
             n = np.random.randint(1, 200)
             ncond = np.random.randint(1, 50)
-            if cable.S * n[0] * ncond[0] / self.SafetyParams['ku']['EntranceInductor'] > core.Aw:
+            if cable.S * n[0] * ncond[0] / self.SafetyParams['ku']['AuxiliaryInductor'] > core.Aw:
                 feasible = True
         auxiliary_inductor = Inductor(core, cable, n, ncond)
 
