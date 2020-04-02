@@ -1,5 +1,3 @@
-from Components import Inductor, Transformer, Cable, Core, Capacitor, Switch, Diode
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import fsolve
 
@@ -11,7 +9,7 @@ def fvo(X, k1, k2, Vo):
     return [Vo ** 3 + k1 * (Vc3 ** 2) * (Vc4 - k2) * (Vc4 * (1 - D) + D * k2), Vo ** 3 + k1 * (Vc4 ** 2) * (Vc3 + k2) * (Vc3 * (1 - D) - D * k2), Vc3 + Vc4 - Vo]
 
 
-def Vc3Vc4D(obj, fs, Lk):
+def vc3_vc4_d(obj, fs, Lk):
     Ts = 1 / fs
     x0 = [obj.Features['Vo'] / 2, obj.Features['Vo'] / 2, 0.5]
     k1 = obj.Features['Ro'] * Ts / (2 * Lk * obj.Features['Vi'] * (obj.Transformer.Ratio ** 3))

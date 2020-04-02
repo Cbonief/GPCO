@@ -6,5 +6,5 @@ setup(
     packages=['TCC'],
     author='Carlos Bonifácio Eberhardt Franco',
     author_email='carlosboni.sa@gmail.com',
-    description=''
+    description='', install_requires=['PyQt5', 'numpy', 'scipy', 'matplotlib']
 )

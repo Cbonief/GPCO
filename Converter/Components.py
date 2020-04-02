@@ -1,12 +1,25 @@
 import numpy as np
-from FileHandler import loadFSD
-import Auxiliar_Functions as af
+from Converter import Auxiliar_Functions as af
+
+uo = 4*np.pi*1e-4
+
+
+def loadFSD():
+    file = open("FSD/FSD_data.txt", "r")
+    contents = file.readlines()
+    file.close()
+    fsd = []
+    for line in contents:
+        aux = line.split("\t")
+        aux2 = aux[1].split("\n")
+        fsd.append(float(aux2[0]))
+    return tuple(fsd)
+
 
 try:
     FSD = loadFSD()
-except:
+except FileNotFoundError:
     print('Didn´t find FSD')
-uo = 4*np.pi*1e-4
 
 
 class Cable:
@@ -56,12 +69,9 @@ class Inductor:
                 ratio = 1
             else:
                 a = self.A_base * np.sqrt(n*fs)
-                # print('A', n, '= ', a)
                 ratio = a*(af.f1(a) + (2/3)*(self.Ncond*self.NC**2 - 1)*af.f2(a))
             self.rca.append(ratio * self.rcc)
-        # for n in range(0, noc):
-        #     print('Rca', '= ', self.rca[n])
-        # print('-----------------------------------------------------')
+
     def get_rca(self, n):
         return self.rca[n]
 

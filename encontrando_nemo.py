@@ -1,4 +1,4 @@
-from Auxiliar_Functions import *
+from Converter.Auxiliar_Functions import *
 from FileHandler import loadFSD
 from scipy.optimize import minimize
 

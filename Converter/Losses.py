@@ -1,4 +1,4 @@
-from Auxiliar_Functions import *
+from Converter.Auxiliar_Functions import *
 
 uo = 4*np.pi*1e-4
 
@@ -15,7 +15,7 @@ def SimulateCircuit(obj, X):
     # Lk = obj.AuxiliaryInductor.getInductance(lg2)
     Ts = 1 / fs
     # obj.Features['D']['Nominal'] = getD(obj, fs, Lk)
-    V = Vc3Vc4D(obj, fs, Lk)
+    V = vc3_vc4_d(obj, fs, Lk)
     Vc3 = V[0]
     Vc4 = V[1]
     obj.Features['D']['Nominal'] = V[2]

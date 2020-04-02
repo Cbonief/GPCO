@@ -1,5 +1,5 @@
-from Restriction import *
-from Losses import *
+from Converter.Restrictions import *
+from Converter.Losses import *
 from scipy.optimize import minimize
 import numpy as np
 

@@ -7,7 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 
 class Ui_MainWindow(object):
@@ -177,4 +177,4 @@ class Ui_MainWindow(object):
         self.actionCabl.setText(_translate("MainWindow", "Cable"))
         self.actionMagnetic_Core.setText(_translate("MainWindow", "Magnetic Core"))
         self.actionOtimizador.setText(_translate("MainWindow", "Otimizador"))
-from mplwidget import MplWidget
+from GUI.mplwidget import MplWidget
