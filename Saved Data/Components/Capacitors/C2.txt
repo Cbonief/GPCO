@@ -1,0 +1,4 @@
+Name: C2
+C: 2
+Rse: 30e-4
+Vmax: 50

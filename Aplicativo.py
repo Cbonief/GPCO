@@ -1,6 +1,8 @@
 import sys
+from functools import partial
 
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QModelIndex, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as NavigationToolbar)
@@ -22,21 +24,49 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.capacitors_database = load_all_capacitors()
         self.diodes_database = load_all_diodes()
         self.dissipators_database = load_all_dissipators()
-        self.available_capacitors = []
+
+        self.available_components = {
+            'Capacitors': [],
+            'Switches': [],
+            'Cores': [],
+            'Cables': [],
+            'Diodes': [],
+            'Dissipators': []
+        }
+        self.selected_components = {
+            'Capacitors': [],
+            'Switches': [],
+            'Cores': [],
+            'Cables': [],
+            'Diodes': [],
+            'Dissipators': []
+        }
         for name in self.capacitors_database:
-            self.available_capacitors.append(name)
-        print(self.available_capacitors)
-        self.selected_capacitors = []
+            self.available_components['Capacitors'].append(name)
+        for name in self.switches_database:
+            self.available_components['Switches'].append(name)
+        for name in self.cores_database:
+            self.available_components['Cores'].append(name)
+        for name in self.cables_database:
+            self.available_components['Cables'].append(name)
+        for name in self.diodes_database:
+            self.available_components['Diodes'].append(name)
+        for name in self.dissipators_database:
+            self.available_components['Dissipators'].append(name)
 
+        # Variable needed to open a new window in the app.
         self.window = None
-        self.model = None
 
-        self.select_cap = None
+        # Variables need to open and handle selected components.
+        self.model_available = None
+        self.model_selected = None
+        self.selected_item = None
+        self.component_being_selected = None
+        self.select_component_window = None
 
         print("Built")
 
-
-    def Optimize(self):
+    def optimize(self):
         try:
             user_input = [
                 float(self.input_Vin.text()),
@@ -54,7 +84,6 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
                 'Po': user_input[4],
                 'Bmax': {'Transformer': 0.15}
             }
-            print(circuit_features)
         except NameError:
             warning = QMessageBox()
             warning.setWindowTitle("ATENÇÃO!")
@@ -71,58 +100,162 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
     def open_file(self):
         print("Abrir arquivo")
 
-
     def selectCables(self):
         x = np.array([1, 2, 3, 4, 5])
         y = np.array([1, 4, 9, 16, 25])
-        self.graphWidget.plot(x,y,"X ao quadrado", "x2")
+        self.graphWidget.plot(x, y, "X ao quadrado", ['x2'], ['x', 'y'])
         print("SelectCables")
 
+    def open_select_component_window(self, component_being_selected):
+        print(component_being_selected)
+        self.selected_item = None
 
-    def selectCapacitors(self):
-        print("SelectCapacitors")
+        self.component_being_selected = component_being_selected
         self.window = QtWidgets.QMainWindow()
-        self.select_cap = Ui_selectCapWindow()
-        self.select_cap.setupUi(self.window)
-        self.select_cap.add_button.clicked.connect(self.add_capacitor)
-        self.model = QStandardItemModel(self.select_cap.list_available)
-        for name in self.available_capacitors:
-            item = QStandardItem(name)
-            self.model.appendRow(item)
-        self.select_cap.list_available.setModel(self.model)
-        self.model = QStandardItemModel(self.select_cap.list_selected)
-        for name in self.selected_capacitors:
-            item = QStandardItem(name)
-            self.model.appendRow(item)
-        self.select_cap.list_selected.setModel(self.model)
+        self.select_component_window = Ui_selectCapWindow()
+        self.select_component_window.setupUi(self.window)
+        self.select_component_window.add_button.clicked.connect(self.add_capacitor)
+        self.select_component_window.remove_button.clicked.connect(self.remove_capacitor)
+        self.select_component_window.label.setText('Selecionados')
 
-        treeView = QTreeView(self)
-        treeView.setModel(self.model)
-        for n in range(0, len(self.available_capacitors)):
-            treeView.clicked[n].connect(self.capacitor_clicked)
-        self.window.show()
+        self.model_available = QStandardItemModel(self.select_component_window.list_available)
+        for name in self.available_components[component_being_selected]:
+            item = QStandardItem(name)
+            item.setEditable(False)
+            self.model_available.appendRow(item)
+        self.select_component_window.list_available.setModel(self.model_available)
+        try:
+            self.select_component_window.list_available.clicked.connect(self.component_available_clicked)
+        finally:
+            self.model_selected = QStandardItemModel(self.select_component_window.list_selected)
+            for name in self.selected_components[component_being_selected]:
+                item = QStandardItem(name)
+                item.setEditable(False)
+                self.model_selected.appendRow(item)
+            self.select_component_window.list_selected.setModel(self.model_selected)
+            try:
+                self.select_component_window.list_selected.clicked.connect(self.component_selected_clicked)
+            finally:
+                self.window.show()
 
-    def capacitor_clicked(self, index):
-        item = self.model.itemFromIndex(index)
-        print(item)
+    def component_available_clicked(self, index):
+        self.selected_item = self.model_available.itemFromIndex(index)
+        print(self.selected_item.text())
+
+    def component_selected_clicked(self, index):
+        self.selected_item = self.model_selected.itemFromIndex(index)
+        print(self.selected_item.text())
 
     def add_capacitor(self):
-        selected = self.select_cap.list_available.selectedIndexes()
-        for element in selected:
-            print(element.data(role = QtD))
-        #model = QStandardItemModel(self.select_cap.list_available)
-        #for name in self.available_capacitors:
-        #    item = QStandardItem(name)
-        #    model.appendRow(item)
-        #self.select_cap.list_available.setModel(model)
-        #model = QStandardItemModel(self.select_cap.list_selected)
-        #for name in self.select_capacitors:
-        #    item = QStandardItem(name)
-        #    model.appendRow(item)
-        #self.select_cap.list_selected.setModel(model)
+        self.available_components[self.component_being_selected].remove(self.selected_item.text())
+        self.selected_components[self.component_being_selected].append(self.selected_item.text())
+        self.model_available = QStandardItemModel(self.select_component_window.list_available)
+        for name in self.available_components[self.component_being_selected]:
+            item = QStandardItem(name)
+            item.setEditable(False)
+            self.model_available.appendRow(item)
+        self.select_component_window.list_available.setModel(self.model_available)
+
+        self.model_selected = QStandardItemModel(self.select_component_window.list_selected)
+        for name in self.selected_components[self.component_being_selected]:
+            item = QStandardItem(name)
+            item.setEditable(False)
+            self.model_selected.appendRow(item)
+        self.select_component_window.list_selected.setModel(self.model_selected)
+        self.select_component_window.list_selected.clicked.connect(self.component_selected_clicked)
+
+        print('Os capacitores selecionados são :', self.selected_components[self.component_being_selected])
+
+
+    def remove_capacitor(self):
+        self.available_components[self.component_being_selected].append(self.selected_item.text())
+        self.selected_components[self.component_being_selected].remove(self.selected_item.text())
+        self.model_available = QStandardItemModel(self.select_component_window.list_available)
+        for name in self.available_components[self.component_being_selected]:
+            item = QStandardItem(name)
+            item.setEditable(False)
+            self.model_available.appendRow(item)
+        self.select_component_window.list_available.setModel(self.model_available)
+
+        self.model_selected = QStandardItemModel(self.select_component_window.list_selected)
+        for name in self.selected_components[self.component_being_selected]:
+            item = QStandardItem(name)
+            item.setEditable(False)
+            self.model_selected.appendRow(item)
+        self.select_component_window.list_selected.setModel(self.model_selected)
+        print('Os capacitores selecionados são :', self.selected_components[self.component_being_selected])
 
     def selectSwitches(self):
-        print("SelectSwitches")
+
+        self.window = QtWidgets.QMainWindow()
+        self.select_component_window = Ui_selectCapWindow()
+        self.select_component_window.setupUi(self.window)
+        self.select_component_window.add_button.clicked.connect(self.add_capacitor)
+        self.select_component_window.remove_button.clicked.connect(self.remove_capacitor)
+        self.select_component_window.label.setText('Chaves Selecionadas')
+
+        self.model_available = QStandardItemModel(self.select_component_window.list_available)
+        for name in self.available_switches:
+            item = QStandardItem(name)
+            item.setEditable(False)
+            self.model_available.appendRow(item)
+        self.select_component_window.list_available.setModel(self.model_available)
+        self.select_component_window.list_available.clicked.connect(self.component_available_clicked)
+
+        self.model_selected = QStandardItemModel(self.select_component_window.list_selected)
+        for name in self.selected_capacitors:
+            item = QStandardItem(name)
+            item.setEditable(False)
+            self.model_selected.appendRow(item)
+        self.select_component_window.list_selected.setModel(self.model_selected)
+
+        self.window.show()
+
+    # def capacitor_clicked_available(self, index):
+    #     self.selected_item = self.model_available.itemFromIndex(index)
+    #     print(self.selected_item.text())
+    #
+    # def capacitor_clicked_selected(self, index):
+    #     self.selected_item = self.model_selected.itemFromIndex(index)
+    #     print(self.selected_item.text())
+    #
+    # def add_capacitor(self):
+    #     self.available_capacitors.remove(self.selected_item.text())
+    #     self.selected_capacitors.append(self.selected_item.text())
+    #     self.model_available = QStandardItemModel(self.select_component_window.list_available)
+    #     for name in self.available_capacitors:
+    #         item = QStandardItem(name)
+    #         item.setEditable(False)
+    #         self.model_available.appendRow(item)
+    #     self.select_component_window.list_available.setModel(self.model_available)
+    #
+    #     self.model_selected = QStandardItemModel(self.select_component_window.list_selected)
+    #     for name in self.selected_capacitors:
+    #         item = QStandardItem(name)
+    #         item.setEditable(False)
+    #         self.model_selected.appendRow(item)
+    #     self.select_component_window.list_selected.setModel(self.model_selected)
+    #     self.select_component_window.list_selected.clicked.connect(self.capacitor_clicked_selected)
+    #
+    #     print('Os capacitores selecionados são :', self.selected_capacitors)
+    #
+    # def remove_capacitor(self):
+    #     self.available_capacitors.append(self.selected_item.text())
+    #     self.selected_capacitors.remove(self.selected_item.text())
+    #     self.model_available = QStandardItemModel(self.select_component_window.list_available)
+    #     for name in self.available_capacitors:
+    #         item = QStandardItem(name)
+    #         item.setEditable(False)
+    #         self.model_available.appendRow(item)
+    #     self.select_component_window.list_available.setModel(self.model_available)
+    #
+    #     self.model_selected = QStandardItemModel(self.select_component_window.list_selected)
+    #     for name in self.selected_capacitors:
+    #         item = QStandardItem(name)
+    #         item.setEditable(False)
+    #         self.model_selected.appendRow(item)
+    #     self.select_component_window.list_selected.setModel(self.model_selected)
+    #     print('Os capacitores selecionados são :', self.selected_capacitors)
 
     def selectDissipators(self):
         print("SelectDissipators")
@@ -131,16 +264,16 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         print("SelectDiodes")
 
     def selectCores(self):
-        print("SelectCores")
+        self.component_being_selected
 
     def connectActions(self):
-        self.pushButtonOptimize.clicked.connect(self.Optimize)
-        self.pushButtonCableSel.clicked.connect(self.selectCables)
-        self.pushButtonCapSel.clicked.connect(self.selectCapacitors)
-        self.pushButtonCoreSel.clicked.connect(self.selectCores)
-        self.pushButtonDiodeSel.clicked.connect(self.selectDiodes)
-        self.pushButtonDissSel.clicked.connect(self.selectDissipators)
-        self.pushButtonSwitchSel.clicked.connect(self.selectSwitches)
+        self.pushButtonOptimize.clicked.connect(self.optimize)
+        self.pushButtonCableSel.clicked.connect(partial(self.open_select_component_window, 'Cables'))
+        self.pushButtonCapSel.clicked.connect(partial(self.open_select_component_window, 'Capacitors'))
+        self.pushButtonCoreSel.clicked.connect(partial(self.open_select_component_window, 'Cores'))
+        self.pushButtonDiodeSel.clicked.connect(partial(self.open_select_component_window, 'Diodes'))
+        self.pushButtonDissSel.clicked.connect(partial(self.open_select_component_window, 'Disspators'))
+        self.pushButtonSwitchSel.clicked.connect(partial(self.open_select_component_window, "Switches"))
 
         self.actionNew.triggered.connect(self.create_file)
         self.actionSave.triggered.connect(self.save_file)

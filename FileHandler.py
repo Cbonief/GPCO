@@ -12,7 +12,7 @@ def load_core(filename):
     for line in contents:
         aux = line.split(": ")
         variable_name = aux[0]
-        value = aux[1].split("\\n")[0]
+        value = aux[1].split("\n")[0]
         if variable_name != "Name":
             param[variable_name] = float(value)
         else:
@@ -24,7 +24,7 @@ def load_core(filename):
 # Done
 def load_all_cores():
     Cores = {}
-    for file_path in Path("Saved\ Data/Components/Cores/").glob('**/*.txt'):
+    for file_path in Path("Saved Data/Components/Cores/").glob('**/*.txt'):
         [core, name] = load_core(str(file_path))
         Cores[name] = core
     return Cores
@@ -40,7 +40,7 @@ def load_switch(filename):
     for line in contents:
         aux = line.split(": ")
         variable_name = aux[0]
-        value = aux[1].split("\\n")[0]
+        value = aux[1].split("\n")[0]
         if variable_name != "Name":
             param[variable_name] = float(value)
         else:
@@ -52,7 +52,7 @@ def load_switch(filename):
 # Done
 def load_all_switches():
     Switches = {}
-    for file_path in Path("Saved\ Data/Components/Switches/").glob('**/*.txt'):
+    for file_path in Path("Saved Data/Components/Switches/").glob('**/*.txt'):
         [switch, name] = load_switch(str(file_path))
         Switches[name] = switch
     return Switches
@@ -68,7 +68,7 @@ def load_capacitor(filename):
     for line in contents:
         aux = line.split(": ")
         variable_name = aux[0]
-        value = aux[1].split("\\n")[0]
+        value = aux[1].split("\n")[0]
         if variable_name != "Name":
             param[variable_name] = float(value)
         else:
@@ -80,8 +80,7 @@ def load_capacitor(filename):
 # Done
 def load_all_capacitors():
     Capacitors = {}
-    for file_path in Path("SavedData/Components/Capacitors/").glob('**/*.txt'):
-        print(file_path)
+    for file_path in Path("Saved Data/Components/Capacitors/").glob('**/*.txt'):
         [capacitor, name] = load_capacitor(str(file_path))
         Capacitors[name] = capacitor
     return Capacitors
@@ -97,7 +96,7 @@ def load_diode(filename):
     for line in contents:
         aux = line.split(": ")
         variable_name = aux[0]
-        value = aux[1].split("\\n")[0]
+        value = aux[1].split("\n")[0]
         if variable_name != "Name":
             param[variable_name] = float(value)
         else:
@@ -109,7 +108,7 @@ def load_diode(filename):
 # Done
 def load_all_diodes():
     Diodes = {}
-    for file_path in Path("Saved\    Data/Components/Diodes/").glob('**/*.txt'):
+    for file_path in Path("Saved Data/Components/Diodes/").glob('**/*.txt'):
         [diode, name] = load_diode(str(file_path))
         Diodes[name] = diode
     return Diodes
@@ -125,7 +124,7 @@ def load_cable(filename):
     for line in contents:
         aux = line.split(": ")
         variable_name = aux[0]
-        value = aux[1].split("\\n")[0]
+        value = aux[1].split("\n")[0]
         if variable_name != "Name":
             param[variable_name] = float(value)
         else:
@@ -137,7 +136,7 @@ def load_cable(filename):
 # Done
 def load_all_cables():
     Cables = {}
-    for file_path in Path("Saved\ Data/Components/Cables/").glob('**/*.txt'):
+    for file_path in Path("Saved Data/Components/Cables/").glob('**/*.txt'):
         [cable, name] = load_cable(str(file_path))
         Cables[name] = cable
     return Cables
@@ -153,7 +152,7 @@ def load_dissipator(filename):
     for line in contents:
         aux = line.split(": ")
         variable_name = aux[0]
-        value = aux[1].split("\\n")[0]
+        value = aux[1].split("\n")[0]
         if variable_name != "Name":
             param[variable_name] = float(value)
         else:
@@ -165,7 +164,7 @@ def load_dissipator(filename):
 # Done
 def load_all_dissipators():
     Cables = {}
-    for filepath in Path("Saved\    Data/Components/Dissipators/").glob('**/*.txt'):
+    for filepath in Path("Saved Data/Components/Dissipators/").glob('**/*.txt'):
         [cable, name] = load_dissipator(str(filepath))
         Cables[name] = cable
     return Cables

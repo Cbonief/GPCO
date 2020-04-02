@@ -1,6 +1,7 @@
 import numpy as np
-from BoostHalfBridge import BoostHalfBridgeInverter
-from Components import *
+from Converter.BoostHalfBridge import BoostHalfBridgeInverter
+from Converter.Components import *
+
 
 class GeneticOptimizer:
 

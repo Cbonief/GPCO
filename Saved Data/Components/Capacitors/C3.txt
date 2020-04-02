@@ -1,0 +1,4 @@
+Name: C3
+C: 2
+Rse: 550e-3
+Vmax: 50
