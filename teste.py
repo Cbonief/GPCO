@@ -1,11 +1,10 @@
 from Converter.BoostHalfBridge import *
 from matplotlib.pyplot import *
-
-from mpl_toolkits.mplot3d import Axes3D
+from Converter.Components import *
 import numpy as np
+
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
 
-print('Iniciando')
 
 print('\nCriando componentes')
 # Cria os núcleos a serem usados.
@@ -28,7 +27,7 @@ diode3 = Diode(1.5, 0)
 diode4 = diode3
 
 # Cria os capacitores.
-capacitor1 = Capacitor(2, (31e-3)/3)
+capacitor1 = Capacitor(2, 31e-3 / 3)
 capacitor2 = Capacitor(2, 30e-4)
 capacitor3 = Capacitor(2, 550e-3)
 capacitor4 = Capacitor(2, 250e-3)
@@ -40,6 +39,7 @@ switches = [switch1, switch2]
 
 print('\nConfigurando conversor')
 # Cria as características do conversor.
+# @circuit
 circuit_features = {
     'Vo': 400,
     'D': {'Nominal': 0.55, 'Max': 0.7, 'Min': 0.3},
@@ -61,18 +61,18 @@ Li = Inductor(core[1], cables[1], N[2], Ncond[2])
 Lk = Inductor(core[2], cables[2], N[3], Ncond[3])
 
 
-Conversor = BoostHalfBridgeInverter(Trafo, Li, Lk, circuit_features, switches, diodes, capacitors)
+converter = BoostHalfBridgeInverter(Trafo, Li, Lk, circuit_features, switches, diodes, capacitors)
 Lss = 2.562e-4
 uo = 4*np.pi*1e-4
 lg = (28**2)*uo*NEE_42_20.Ae/Lss
-f = np.linspace(4e3, 100e3, 100)
-lossVec = np.zeros(100)
-res1 = np.zeros(100)
-res2 = np.zeros(100)
+f = np.linspace(800, 100e3, 1000)
+lossVec = np.zeros(1000)
+res1 = np.zeros(1000)
+res2 = np.zeros(1000)
 
-for n in range(0, 100):
-    lossVec[n] = Conversor.compensated_total_loss([f[n], Lss*1e8, 1e10*1e-6])
-    res = Conversor.total_constraint([f[n], 2*Lss*1e8, 1e10*1e-6])
+for n in range(0, 1000):
+    lossVec[n] = converter.compensated_total_loss([f[n], Lss * 1e8, 1e10 * 1e-6])
+    res = converter.total_constraint([f[n], 2 * Lss * 1e8, 1e10 * 1e-6])
 
 
 figure()

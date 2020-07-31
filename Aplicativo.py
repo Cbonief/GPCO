@@ -2,13 +2,11 @@ import sys
 from functools import partial
 
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QModelIndex, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as NavigationToolbar)
-
 from GUI.MainWindow import Ui_MainWindow
-from GUI.selectCapWindow import Ui_selectCapWindow
+from GUI.selectComponentWindow import Ui_ComponentSelectWindow
+from GUI.configSecurityWindow import Ui_configSecurityWindow
 
 from FileHandler import *
 
@@ -17,13 +15,16 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super(Aplicativo, self).__init__(parent)
         self.setupUi(self)
-        self.connectActions()
+        self.connect_actions()
         self.cores_database = load_all_cores()
         self.cables_database = load_all_cables()
         self.switches_database = load_all_switches()
         self.capacitors_database = load_all_capacitors()
         self.diodes_database = load_all_diodes()
         self.dissipators_database = load_all_dissipators()
+
+        self.converter_configured = False
+        self.security_params_configured = False
 
         self.available_components = {
             'Capacitors': [],
@@ -63,28 +64,36 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.selected_item = None
         self.component_being_selected = None
         self.select_component_window = None
+        self.config_security_window = None
+
+        self.circuit_features = None
+        self.safety_params = None
 
         print("Built")
 
-    def optimize(self):
+    def save_circuit_features(self):
         try:
-            user_input = [
-                float(self.input_Vin.text()),
-                float(self.input_Vo.text()),
-                float(self.input_DeltaVo.text()),
-                float(self.input_DeltaIin.text()),
-                float(self.input_Po.text())
-            ]
+            vo = float(self.input_Vo.text())
+            vin_min = float(self.input_VinMin.text())
+            vin = float(self.input_Vin.text())
+            vin_max = float(self.input_VinMax.text())
+            d_in = float(self.input_DeltaIin.text())
+            po = float(self.input_Vo.text())
+            ro = (vo**2)/po
+            d_vo = float(self.input_DeltaVo.text())
             circuit_features = {
-                'Vo': user_input[1],
+                'Vo': vo,
                 'D': {'Nominal': 0.55},
-                'Vi': user_input[0],
-                'dIin_max': user_input[3],
-                'Ro': (user_input[1] ** 2 / user_input[4]),
-                'Po': user_input[4],
-                'Bmax': {'Transformer': 0.15}
+                'Vi': {'Min': vin_min, 'Nominal': vin, 'Max': vin_max},
+                'dIin_max': d_in,
+                'dVo_max': d_vo,
+                'Ro': ro,
+                'Po': po
             }
-        except NameError:
+            self.circuit_features = circuit_features
+            self.converter_configured = True
+        except:
+            self.converter_configured = False
             warning = QMessageBox()
             warning.setWindowTitle("ATENÇÃO!")
             warning.setText("Uma ou mais entradas não foram configuradas")
@@ -100,19 +109,47 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
     def open_file(self):
         print("Abrir arquivo")
 
-    def selectCables(self):
-        x = np.array([1, 2, 3, 4, 5])
-        y = np.array([1, 4, 9, 16, 25])
-        self.graphWidget.plot(x, y, "X ao quadrado", ['x2'], ['x', 'y'])
-        print("SelectCables")
+    def open_security_config_window(self):
+        self.window = QtWidgets.QMainWindow()
+        self.config_security_window = Ui_configSecurityWindow()
+        self.config_security_window.setupUi(self.window)
+        self.config_security_window.save_configurations_button.clicked.connect(self.save_security_configurations)
+        self.window.show()
+
+    def save_security_configurations(self):
+        try:
+            fvcmax = float(self.config_security_window.input_fvcmax.text())
+            fvdmax = float(self.config_security_window.input_fvdmax.text())
+            ficmax = float(self.config_security_window.input_ficmax.text())
+            fidmax = float(self.config_security_window.input_fidmax.text())
+            futrafo = float(self.config_security_window.input_futrafo.text())
+            fuLi = float(self.config_security_window.input_fuLi.text())
+            fuLk = float(self.config_security_window.input_fuLk.text())
+            safety_params = {
+                'Vc1': fvcmax,
+                'Vc2': fvcmax,
+                'Vco': fvcmax,
+                'Vdo': fvdmax,
+                'Id': ficmax,
+                'Ic': fidmax,
+                'ku': {'Transformer': futrafo, 'EntranceInductor': fuLi, 'AuxiliaryInductor': fuLk}
+            }
+            self.safety_params = safety_params
+            self.security_params_configured = True
+        except:
+            self.security_params_configured = False
+            warning = QMessageBox()
+            warning.setWindowTitle("ATENÇÃO!")
+            warning.setText("Uma ou mais entradas não foram configuradas")
+            warning.setIcon(QMessageBox.Warning)
+            warning.exec_()
 
     def open_select_component_window(self, component_being_selected):
-        print(component_being_selected)
         self.selected_item = None
 
         self.component_being_selected = component_being_selected
         self.window = QtWidgets.QMainWindow()
-        self.select_component_window = Ui_selectCapWindow()
+        self.select_component_window = Ui_ComponentSelectWindow()
         self.select_component_window.setupUi(self.window)
         self.select_component_window.add_button.clicked.connect(self.add_component)
         self.select_component_window.remove_button.clicked.connect(self.remove_component)
@@ -183,43 +220,9 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             self.select_component_window.list_selected.setModel(self.model_selected)
             self.selected_item = None
 
-    def selectSwitches(self):
 
-        self.window = QtWidgets.QMainWindow()
-        self.select_component_window = Ui_selectCapWindow()
-        self.select_component_window.setupUi(self.window)
-        self.select_component_window.add_button.clicked.connect(self.add_capacitor)
-        self.select_component_window.remove_button.clicked.connect(self.remove_capacitor)
-        self.select_component_window.label.setText('Chaves Selecionadas')
-
-        self.model_available = QStandardItemModel(self.select_component_window.list_available)
-        for name in self.available_switches:
-            item = QStandardItem(name)
-            item.setEditable(False)
-            self.model_available.appendRow(item)
-        self.select_component_window.list_available.setModel(self.model_available)
-        self.select_component_window.list_available.clicked.connect(self.component_available_clicked)
-
-        self.model_selected = QStandardItemModel(self.select_component_window.list_selected)
-        for name in self.selected_capacitors:
-            item = QStandardItem(name)
-            item.setEditable(False)
-            self.model_selected.appendRow(item)
-        self.select_component_window.list_selected.setModel(self.model_selected)
-
-        self.window.show()
-
-    def selectDissipators(self):
-        print("SelectDissipators")
-
-    def selectDiodes(self):
-        print("SelectDiodes")
-
-    def selectCores(self):
-        self.component_being_selected
-
-    def connectActions(self):
-        self.pushButtonOptimize.clicked.connect(self.optimize)
+    def connect_actions(self):
+        self.pushButtonCreateConverter.clicked.connect(self.save_circuit_features)
         self.pushButtonCableSel.clicked.connect(partial(self.open_select_component_window, 'Cables'))
         self.pushButtonCapSel.clicked.connect(partial(self.open_select_component_window, 'Capacitors'))
         self.pushButtonCoreSel.clicked.connect(partial(self.open_select_component_window, 'Cores'))
@@ -230,11 +233,15 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionNew.triggered.connect(self.create_file)
         self.actionSave.triggered.connect(self.save_file)
         self.actionOpen.triggered.connect(self.open_file)
+        self.actionSecurityConfig.triggered.connect(self.open_security_config_window)
 
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    app.setStyle(QStyleFactory.create('Fusion'))
     form = Aplicativo()
     form.show()
-    form.update() #start with something
+    form.update()  # start with something
     app.exec_()
     print("DONE")

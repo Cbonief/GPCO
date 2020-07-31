@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>configSecurityWindow</class>
- <widget class="QMainWindow" name="configSecurityWindow">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>287</width>
-    <height>356</height>
+    <width>306</width>
+    <height>340</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>20</x>
+      <x>30</x>
       <y>20</y>
       <width>254</width>
       <height>265</height>
@@ -42,7 +42,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Configurações de Seguraça&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Configurações de Otimização&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
@@ -131,7 +131,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QLineEdit" name="input_fvdmax">
+        <widget class="QLineEdit" name="input_fdmax">
          <property name="maximumSize">
           <size>
            <width>60</width>
@@ -353,7 +353,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="save_configurations_button">
+        <widget class="QPushButton" name="pushButton">
          <property name="text">
           <string>Salvar</string>
          </property>
@@ -376,6 +376,16 @@
      </item>
     </layout>
    </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>306</width>
+     <height>21</height>
+    </rect>
+   </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>

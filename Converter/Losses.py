@@ -1,20 +1,21 @@
-from Converter.Auxiliar_Functions import *
+from Converter.auxiliary_functions import *
 
 uo = 4*np.pi*1e-4
 
+
 def SimulateCircuit(obj, X):
+
+    obj.Transformer.Primary.calculate_rca(X[0], 40)
+    obj.Transformer.Secondary.calculate_rca(X[0], 40)
+    obj.EntranceInductor.calculate_rca(X[0], 40)
+    obj.AuxiliaryInductor.calculate_rca(X[0], 40)
+
     fs = X[0]
     Li = X[1]/1e8
-    lg2 = X[2]
+    # lg2 = X[2]
     eff = X[3]
-    # Li = obj.EntranceInductor.get_inductance(lg1)
-    # print('Li = ', Li)
-    # Lk = 1e-6
     Lk = X[2]/1e10
-    # print('Lk = ', Lk)
-    # Lk = obj.AuxiliaryInductor.getInductance(lg2)
     Ts = 1 / fs
-    # obj.Features['D']['Nominal'] = getD(obj, fs, Lk)
     V = vc3_vc4_d(obj, fs, Lk)
     Vc3 = V[0]
     Vc4 = V[1]
@@ -107,7 +108,6 @@ def Transformer_Cable_Loss(obj, X):
     fs = X[0]
 
     harmonics = obj.CalculatedValues['TransformerHarmonics']
-    irms = obj.CalculatedValues['TransformerIrms']
     cable_loss_primary = 0
     cable_loss_secondary = 0
 

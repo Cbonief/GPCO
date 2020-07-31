@@ -16,7 +16,7 @@ Restrictions = [dIin_max, bmax_Li, bmax_Lk]
 
 class BoostHalfBridgeInverter:
 
-    def __init__(self, transformer, entrance_inductor, auxiliary_inductor, circuit_features, switches, diodes, capacitors, dissipators = None):
+    def __init__(self, transformer, entrance_inductor, auxiliary_inductor, circuit_features, switches, diodes, capacitors, dissipators=None):
         self.ConverterLosses = []
         self.CalculatedValues = {}
         for loss in Losses:
@@ -53,8 +53,14 @@ class BoostHalfBridgeInverter:
         self.feasibility = solution.success
         return [solution.x[0], solution.x[1]/1e8, solution.x[2]/1e10]
 
+    """ 
+    Calculates the objective function, defined by the ALAG Method
+    :input:
+        X: list containing in order: frequency, Li, Lk.
+        rk: scaling factor of the k-iteration of the ALAG method.
+    :return: a single float value.
+    """
     def slackness(self, X, rk):
-        """Calculates the new objective function, defined by the ALAG Method"""
         slack = self.compensated_total_loss(X)
         for restriction in self.ConverterRestrictions:
             if restriction['type'] is 'eq':
@@ -63,16 +69,14 @@ class BoostHalfBridgeInverter:
                 slack = slack - np.log(restriction['function'](self, X)) * rk
         return slack
 
+    """
+    Calculates the total converter loss, iterating to obtain the real efficiency.
+    This iteration is due to the fact that the efficiency actually changes the input current of the converter.
+    :input:
+        X: list containing in order: frequency, Li, Lk.
+    :return: a single float value.
+    """
     def compensated_total_loss(self, X):
-        """Calculates the total converter loss, iterating to obtain the real efficiency.
-        This iteration is due to the fact that the efficiency actually changes the input current of the converter.
-        X is a vector containing the frequency, and all the gap widths.
-        """
-        # print('Called')
-        self.Transformer.Primary.calculate_rca(X[0], 40)
-        self.Transformer.Secondary.calculate_rca(X[0], 40)
-        self.EntranceInductor.calculate_rca(X[0], 40)
-        self.AuxiliaryInductor.calculate_rca(X[0], 40)
         efficiency = 0.8
         po = self.Features['Po']
         loss = po * (1 - efficiency) / efficiency
@@ -87,8 +91,28 @@ class BoostHalfBridgeInverter:
         self.CalculatedValues['efficiency'] = efficiency
         return loss
 
+    def compensated_total_loss_vector_input(self, frequency, Li, Lk=None):
+        size = np.size(frequency)
+        loss = np.zeros(size)
+        po = self.Features['Po']
+        for i in range(0, size):
+            efficiency = 0.8
+            error = 2
+            loss_last = po * (1 - efficiency) / efficiency
+            while error > 0.01:
+                loss[i] = self.total_loss([frequency[i], Li, Lk, efficiency])
+                efficiency = po / (po + loss[i])
+                error = abs(loss_last - loss[i])
+                loss_last = loss[i]
+        return loss
+
+    """
+    Calculates the total_loss of the converter, given a frequency, gap widths and efficiency
+    :input:
+        X: list containing in order: frequency, Li, Lk and the efficiency.
+    :return: a single float value.
+    """
     def total_loss(self, X):
-        """ Calculates the total_loss of the converter, given a frequency, gap widths and efficiency"""
         output = 0
         self.CalculatedValues = SimulateCircuit(self, X)
         for loss in self.ConverterLosses:
@@ -97,11 +121,16 @@ class BoostHalfBridgeInverter:
                 output = output + partial
         return output
 
+    """
+    Calculates all the M constraints and returns them in a M sized vector.
+    The variable first_run guarantees that you only simulate the circuit in this function if the
+    circuit wasn't already simulated in the compensated_total_loss function.
+    This is done to save, so the circuit is only simulated once.
+    :input:
+        X: list containing in order: frequency, Li, Lk and the efficiency.
+    :return: a list containing M floats.
+    """
     def total_constraint(self, X):
-        """ Calculates all the M constraints and returns them in a M sized vector.
-            The variable first_run guarantees that you only simulate the circuit in this function if the
-            circuit wasn't already simulated in the compensated_total_loss function.
-        """
         constraints = []
         eff = 0.8
         if self.first_run:
@@ -114,5 +143,106 @@ class BoostHalfBridgeInverter:
             constraints.append(func(self, [X[0], X[1], X[2], eff], self.CalculatedValues))
         return constraints
 
+    """return: the feasibility of the circuit as a boolean"""
     def solution_is_feasible(self):
         return self.feasibility
+
+    def get_parameter(self, name):
+        if name == 'primary_cable':
+            return self.Transformer.Primary.Cable                       # ok
+        elif name == 'secondary_cable':
+            return self.Transformer.Secondary.Cable                     # ok
+        elif name == 'transformer_core':
+            return self.Transformer.Core                                # ok
+        elif name == 'primary_winding':
+            return self.Transformer.Primary.N                           # ok
+        elif name == 'secondary_winding':
+            return self.Transformer.Secondary.N                         # ok
+        elif name == 'primary_parallel_wires':
+            return self.Transformer.Primary.Ncond                       # ok
+        elif name == 'secondary_parallel_wires':
+            return self.Transformer.Secondary.Ncond                     # ok
+        elif name == 'entrance_inductor_cable':
+            return self.EntranceInductor.Cable                          # ok
+        elif name == 'entrance_inductor_winding':
+            return self.EntranceInductor.N                              # ok
+        elif name == 'entrance_inductor_parallel_wires':
+            return self.EntranceInductor.Ncond                          # ok
+        elif name == 'entrance_inductor_core':
+            return self.EntranceInductor.Core                           # ok
+        elif name == 'auxiliary_inductor_cable':
+            return self.AuxiliaryInductor.Cable                         # ok
+        elif name == 'auxiliary_inductor_winding':
+            return self.AuxiliaryInductor.N                             # ok
+        elif name == 'auxiliary_inductor_parallel_wires':
+            return self.AuxiliaryInductor.Ncond                         # ok
+        elif name == 'auxiliary_inductor_core':
+            return self.AuxiliaryInductor.Core                          # ok
+        elif name == 'c1' or name == 'C1':
+            return self.Capacitors[0]                                   # ok
+        elif name == 'c2' or name == 'C2':
+            return self.Capacitors[1]                                   # ok
+        elif name == 'c3' or name == 'C3':
+            return self.Capacitors[2]                                   # ok
+        elif name == 'c4' or name == 'C4':
+            return self.Capacitors[3]                                   # ok
+        elif name == 'd3' or name == 'D3':
+            return self.Diodes[0]                                       # ok
+        elif name == 'd4' or name == 'D4':
+            return self.Diodes[1]                                       # ok
+        elif name == 's1' or name == 'S1':
+            return self.Switches[0]                                     # ok
+        elif name == 'S2' or name == 'S2':
+            return self.Switches[1]                                     # ok
+        else:
+            raise Exception(name + " is not a defined parameter")
+
+    def set_parameter(self, name, value):
+        if name == 'primary_cable':
+            self.Transformer.Primary.Cable = value
+        elif name == 'secondary_cable':
+            self.Transformer.Secondary.Cable = value
+        elif name == 'transformer_core':
+            self.Transformer.Core = value
+        elif name == 'primary_winding':
+            self.Transformer.Primary.N = value
+        elif name == 'secondary_winding':
+            self.Transformer.Secondary.N = value
+        elif name == 'primary_parallel_wires':
+            self.Transformer.Primary.Ncond = value
+        elif name == 'secondary_parallel_wires':
+            self.Transformer.Secondary.Ncond = value
+        elif name == 'entrance_inductor_cable':
+            self.EntranceInductor.Cable = value
+        elif name == 'entrance_inductor_winding':
+            self.EntranceInductor.N = value
+        elif name == 'entrance_inductor_parallel_wires':
+            self.EntranceInductor.Ncond = value
+        elif name == 'entrance_inductor_core':
+            self.EntranceInductor.Core = value
+        elif name == 'auxiliary_inductor_cable':
+            self.AuxiliaryInductor.Cable = value
+        elif name == 'auxiliary_inductor_winding':
+            self.AuxiliaryInductor.N = value
+        elif name == 'auxiliary_inductor_parallel_wires':
+            self.AuxiliaryInductor.Ncond = value
+        elif name == 'auxiliary_inductor_core':
+            self.AuxiliaryInductor.Core = value
+        elif name == 'c1' or name == 'C1':
+            self.Capacitors[0] = value
+        elif name == 'c2' or name == 'C2':
+            self.Capacitors[1] = value
+        elif name == 'c3' or name == 'C3':
+            self.Capacitors[2] = value
+        elif name == 'c4' or name == 'C4':
+            self.Capacitors[3] = value
+        elif name == 'd3' or name == 'D3':
+            self.Diodes[0] = value
+        elif name == 'd4' or name == 'D4':
+            self.Diodes[1] = value
+        elif name == 's1' or name == 'S1':
+            self.Switches[0] = value
+        elif name == 'S2' or name == 'S2':
+            self.Switches[1] = value
+        else:
+            raise Exception(name + " is not a defined parameter")

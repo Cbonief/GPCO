@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'selectCapWindow.ui'
+# Form implementation generated from reading ui file 'selectComponentWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.13.0
 #
@@ -10,11 +10,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_selectCapWindow(object):
-    def setupUi(self, selectCapWindow):
-        selectCapWindow.setObjectName("selectCapWindow")
-        selectCapWindow.resize(411, 478)
-        self.centralwidget = QtWidgets.QWidget(selectCapWindow)
+class Ui_ComponentSelectWindow(object):
+    def setupUi(self, ComponentSelectWindow):
+        ComponentSelectWindow.setObjectName("ComponentSelectWindow")
+        ComponentSelectWindow.resize(411, 478)
+        self.centralwidget = QtWidgets.QWidget(ComponentSelectWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.list_selected = QtWidgets.QListView(self.centralwidget)
         self.list_selected.setGeometry(QtCore.QRect(210, 90, 181, 192))
@@ -37,22 +37,22 @@ class Ui_selectCapWindow(object):
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(240, 60, 121, 16))
         self.label.setObjectName("label")
-        selectCapWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(selectCapWindow)
+        ComponentSelectWindow.setCentralWidget(self.centralwidget)
+        self.menubar = QtWidgets.QMenuBar(ComponentSelectWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 411, 21))
         self.menubar.setObjectName("menubar")
-        selectCapWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(selectCapWindow)
+        ComponentSelectWindow.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(ComponentSelectWindow)
         self.statusbar.setObjectName("statusbar")
-        selectCapWindow.setStatusBar(self.statusbar)
+        ComponentSelectWindow.setStatusBar(self.statusbar)
 
-        self.retranslateUi(selectCapWindow)
-        QtCore.QMetaObject.connectSlotsByName(selectCapWindow)
+        self.retranslateUi(ComponentSelectWindow)
+        QtCore.QMetaObject.connectSlotsByName(ComponentSelectWindow)
 
-    def retranslateUi(self, selectCapWindow):
+    def retranslateUi(self, ComponentSelectWindow):
         _translate = QtCore.QCoreApplication.translate
-        selectCapWindow.setWindowTitle(_translate("selectCapWindow", "MainWindow"))
-        self.search_button.setText(_translate("selectCapWindow", "Pesquisar"))
-        self.add_button.setText(_translate("selectCapWindow", "Adicionar"))
-        self.remove_button.setText(_translate("selectCapWindow", "Remover"))
-        self.label.setText(_translate("selectCapWindow", "Capacitores Selecionados"))
+        ComponentSelectWindow.setWindowTitle(_translate("ComponentSelectWindow", "Selecione os componentes"))
+        self.search_button.setText(_translate("ComponentSelectWindow", "Pesquisar"))
+        self.add_button.setText(_translate("ComponentSelectWindow", "Adicionar"))
+        self.remove_button.setText(_translate("ComponentSelectWindow", "Remover"))
+        self.label.setText(_translate("ComponentSelectWindow", "Capacitores Selecionados"))
