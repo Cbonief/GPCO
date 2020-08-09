@@ -1,3 +1,4 @@
 Name: D3
 Vd: 1.5
 Rt: 0
+Vmax: 600

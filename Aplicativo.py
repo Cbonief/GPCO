@@ -8,7 +8,12 @@ from GUI.MainWindow import Ui_MainWindow
 from GUI.selectComponentWindow import Ui_ComponentSelectWindow
 from GUI.configSecurityWindow import Ui_configSecurityWindow
 
-from FileHandler import *
+from Optimizer import *
+
+import datetime
+
+import FileHandler
+import json
 
 
 class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -16,15 +21,23 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         super(Aplicativo, self).__init__(parent)
         self.setupUi(self)
         self.connect_actions()
-        self.cores_database = load_all_cores()
-        self.cables_database = load_all_cables()
-        self.switches_database = load_all_switches()
-        self.capacitors_database = load_all_capacitors()
-        self.diodes_database = load_all_diodes()
-        self.dissipators_database = load_all_dissipators()
 
-        self.converter_configured = False
-        self.security_params_configured = False
+        scene = QGraphicsScene(self.centralwidget)
+        self.graphicsView.setScene(scene)
+
+        rect = scene.addRect(10, 10, 40, 40)
+        rect2 = scene.addRect(40, 40, 40, 40)
+
+        #Load general info.
+        self.cores_database = FileHandler.load_all_cores()
+        self.cables_database = FileHandler.load_all_cables()
+        self.switches_database = FileHandler.load_all_switches()
+        self.capacitors_database = FileHandler.load_all_capacitors()
+        self.diodes_database = FileHandler.load_all_diodes()
+        self.dissipators_database = FileHandler.load_all_dissipators()
+
+        self.converter_configured = True
+        self.security_params_configured = True
 
         self.available_components = {
             'Capacitors': [],
@@ -44,6 +57,7 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         }
         for name in self.capacitors_database:
             self.available_components['Capacitors'].append(name)
+            print(self.capacitors_database[name].Vmax)
         for name in self.switches_database:
             self.available_components['Switches'].append(name)
         for name in self.cores_database:
@@ -66,31 +80,89 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.select_component_window = None
         self.config_security_window = None
 
-        self.circuit_features = None
-        self.safety_params = None
+        self.circuit_features = {
+            'Vo': 0.0,
+            'Vi': {'Min': 0.0, 'Nominal': 0.0, 'Max': 0.0},
+            'D': {'Min': 0.0, 'Nominal': 0.0, 'Max': 0.0},
+            'dIin_max': 0.0,
+            'dVo_max': 0.0,
+            'Po': 0.0,
+            'Jmax': 0.0,
+            'Ro': 0.0
+        }
+        self.circuit_features_input_table = {
+            'Vo': self.input_Vo,
+            'Vi': {'Min': self.input_VinMin, 'Nominal': self.input_Vin, 'Max': self.input_VinMax},
+            'D': {'Min': self.input_Dmin, 'Nominal': self.input_D, 'Max': self.input_Dmax},
+            'dIin_max': self.input_DeltaIin,
+            'dVo_max': self.input_DeltaVo,
+            'Po': self.input_Po,
+            'Jmax': self.input_JMax
+        }
 
-        print("Built")
+        self.safety_window = QtWidgets.QMainWindow()
+        self.config_security_window = Ui_configSecurityWindow()
+        self.config_security_window.setupUi(self.safety_window)
+        self.config_security_window.save_configurations_button.clicked.connect(self.save_security_configurations)
+        self.safety_params = {
+            'Vc': 2.0,
+            'Vd': 2.0,
+            'Id': 2.0,
+            'Ic': 2.0,
+            'ku': {'Transformer': 0.4, 'EntranceInductor': 0.4, 'AuxiliaryInductor': 0.4}
+        }
+        self.safety_params_input_table = {
+            'Vc': self.config_security_window.input_fvcmax,
+            'Vd': self.config_security_window.input_fvdmax,
+            'Id': self.config_security_window.input_fidmax,
+            'Ic': self.config_security_window.input_ficmax,
+            'ku': {'Transformer': self.config_security_window.input_futrafo, 'EntranceInductor': self.config_security_window.input_fuLi, 'AuxiliaryInductor': self.config_security_window.input_fuLk}
+        }
+        for feature in self.safety_params:
+            if type(self.safety_params_input_table[feature]) is dict:
+                for secondary_feature in self.safety_params_input_table[feature]:
+                    self.safety_params_input_table[feature][secondary_feature].setText(
+                        str(self.safety_params[feature][secondary_feature]))
+            else:
+                self.safety_params_input_table[feature].setText(str(self.safety_params[feature]))
+
+        aux = "config{:%m%d%Y}"
+        self.default_file_name = aux.format(datetime.datetime.today())
+
+        print("App Started")
+
+    def optimize(self):
+        if self.converter_configured:
+            optimizer = GeneticOptimizer(self.get_components(), self.circuit_features, self.safety_params)
+        else:
+            if not self.converter_configured and not self.security_params_configured:
+                warning = QMessageBox()
+                warning.setWindowTitle("ATENÇÃO!")
+                warning.setText("O conversor e os parâmetros de segurança não foram configurados")
+                warning.setIcon(QMessageBox.Warning)
+                warning.exec_()
+            elif not self.converter_configured:
+                warning = QMessageBox()
+                warning.setWindowTitle("ATENÇÃO!")
+                warning.setText("O conversor não foi configurado")
+                warning.setIcon(QMessageBox.Warning)
+                warning.exec_()
+            elif not self.security_params_configured:
+                warning = QMessageBox()
+                warning.setWindowTitle("ATENÇÃO!")
+                warning.setText("Os parâmetros de segurança não foram configurados")
+                warning.setIcon(QMessageBox.Warning)
+                warning.exec_()
 
     def save_circuit_features(self):
         try:
-            vo = float(self.input_Vo.text())
-            vin_min = float(self.input_VinMin.text())
-            vin = float(self.input_Vin.text())
-            vin_max = float(self.input_VinMax.text())
-            d_in = float(self.input_DeltaIin.text())
-            po = float(self.input_Vo.text())
-            ro = (vo**2)/po
-            d_vo = float(self.input_DeltaVo.text())
-            circuit_features = {
-                'Vo': vo,
-                'D': {'Nominal': 0.55},
-                'Vi': {'Min': vin_min, 'Nominal': vin, 'Max': vin_max},
-                'dIin_max': d_in,
-                'dVo_max': d_vo,
-                'Ro': ro,
-                'Po': po
-            }
-            self.circuit_features = circuit_features
+            for feature in self.circuit_features_input_table:
+                if type(self.circuit_features_input_table[feature]) is dict:
+                    for secondary_feature in self.circuit_features_input_table[feature]:
+                        self.circuit_features[feature][secondary_feature] = float(self.circuit_features_input_table[feature][secondary_feature].text())
+                else:
+                    self.circuit_features[feature] = float(self.circuit_features_input_table[feature].text())
+            self.circuit_features['Ro'] = (self.circuit_features['Vo']**2)/self.circuit_features['Po']
             self.converter_configured = True
         except:
             self.converter_configured = False
@@ -101,40 +173,56 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             warning.exec_()
 
     def create_file(self):
+        print(str(float(self.circuit_features_input_table['Vo'].text())) + 'oi')
         print("Criar novo arquivo")
 
+    # Saves all current configurations as a JSon File.
     def save_file(self):
-        print("Salvar arquivo")
+        filename = QFileDialog.getSaveFileName(self, "Save File", self.default_file_name+'.json', filter='*.json')
+        if filename[0]:
+            with open(filename[0], 'w') as write_file:
+                saved_data = [self.selected_components, self.available_components, self.safety_params, self.circuit_features]
+                json.dump(saved_data, write_file, indent=2)
 
+    # Reads configurations from a JSon File.
     def open_file(self):
-        print("Abrir arquivo")
+        filename = QFileDialog.getOpenFileName(self, "Open File", filter='*.json')
+        self.read_file(filename[0])
+
+    def read_file(self, filename):
+        if filename:
+            with open(filename, "r") as read_file:
+                data = json.load(read_file)
+                self.selected_components = data[0]
+                self.available_components = data[1]
+                self.safety_params = data[2]
+                self.circuit_features = data[3]
+                for feature in self.circuit_features:
+                    if feature in self.circuit_features_input_table:
+                        if type(self.circuit_features_input_table[feature]) is dict:
+                            for secondary_feature in self.circuit_features_input_table[feature]:
+                                if self.circuit_features[feature][secondary_feature] != 0.0:
+                                    self.circuit_features_input_table[feature][secondary_feature].setText(str(self.circuit_features[feature][secondary_feature]))
+                        elif self.circuit_features[feature] != 0.0:
+                            self.circuit_features_input_table[feature].setText(str(self.circuit_features[feature]))
+                for feature in self.safety_params:
+                    if type(self.safety_params_input_table[feature]) is dict:
+                        for secondary_feature in self.safety_params_input_table[feature]:
+                            self.safety_params_input_table[feature][secondary_feature].setText(str(self.safety_params[feature][secondary_feature]))
+                    else:
+                        self.safety_params_input_table[feature].setText(str(self.safety_params[feature]))
 
     def open_security_config_window(self):
-        self.window = QtWidgets.QMainWindow()
-        self.config_security_window = Ui_configSecurityWindow()
-        self.config_security_window.setupUi(self.window)
-        self.config_security_window.save_configurations_button.clicked.connect(self.save_security_configurations)
-        self.window.show()
+        self.safety_window.show()
 
     def save_security_configurations(self):
         try:
-            fvcmax = float(self.config_security_window.input_fvcmax.text())
-            fvdmax = float(self.config_security_window.input_fvdmax.text())
-            ficmax = float(self.config_security_window.input_ficmax.text())
-            fidmax = float(self.config_security_window.input_fidmax.text())
-            futrafo = float(self.config_security_window.input_futrafo.text())
-            fuLi = float(self.config_security_window.input_fuLi.text())
-            fuLk = float(self.config_security_window.input_fuLk.text())
-            safety_params = {
-                'Vc1': fvcmax,
-                'Vc2': fvcmax,
-                'Vco': fvcmax,
-                'Vdo': fvdmax,
-                'Id': ficmax,
-                'Ic': fidmax,
-                'ku': {'Transformer': futrafo, 'EntranceInductor': fuLi, 'AuxiliaryInductor': fuLk}
-            }
-            self.safety_params = safety_params
+            for feature in self.safety_params_input_table:
+                if type(self.safety_params_input_table[feature]) is dict:
+                    for secondary_feature in self.safety_params_input_table[feature]:
+                        self.safety_params[feature][secondary_feature] = float(self.safety_params_input_table[feature][secondary_feature].text())
+                else:
+                    self.safety_params[feature] = float(self.safety_params_input_table[feature].text())
             self.security_params_configured = True
         except:
             self.security_params_configured = False
@@ -220,9 +308,9 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             self.select_component_window.list_selected.setModel(self.model_selected)
             self.selected_item = None
 
-
     def connect_actions(self):
         self.pushButtonCreateConverter.clicked.connect(self.save_circuit_features)
+        self.optimize_button.clicked.connect(self.optimize)
         self.pushButtonCableSel.clicked.connect(partial(self.open_select_component_window, 'Cables'))
         self.pushButtonCapSel.clicked.connect(partial(self.open_select_component_window, 'Capacitors'))
         self.pushButtonCoreSel.clicked.connect(partial(self.open_select_component_window, 'Cores'))
@@ -235,7 +323,26 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.actionOpen.triggered.connect(self.open_file)
         self.actionSecurityConfig.triggered.connect(self.open_security_config_window)
 
-
+    def get_components(self):
+        components = {
+            'Capacitors': [],
+            'Switches': [],
+            'Cores': [],
+            'Cables': [],
+            'Diodes': [],
+            'Dissipators': []
+        }
+        for name in self.selected_components['Capacitors']:
+            components['Capacitors'].append(self.capacitors_database[name])
+        for name in self.selected_components['Switches']:
+            components['Switches'].append(self.switches_database[name])
+        for name in self.selected_components['Cores']:
+            components['Cores'].append(self.cores_database[name])
+        for name in self.selected_components['Cables']:
+            components['Cables'].append(self.cables_database[name])
+        for name in self.selected_components['Diodes']:
+            components['Diodes'].append(self.diodes_database[name])
+        return components
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

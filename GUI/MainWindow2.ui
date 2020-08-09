@@ -42,8 +42,8 @@
    <widget class="MplWidget" name="graphWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>410</x>
-      <y>390</y>
+      <x>490</x>
+      <y>100</y>
       <width>360</width>
       <height>280</height>
      </rect>
@@ -1309,33 +1309,14 @@
    <widget class="QPushButton" name="optimize_button">
     <property name="geometry">
      <rect>
-      <x>550</x>
-      <y>350</y>
+      <x>630</x>
+      <y>60</y>
       <width>75</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
      <string>Otimizar</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_4">
-    <property name="geometry">
-     <rect>
-      <x>350</x>
-      <y>20</y>
-      <width>521</width>
-      <height>211</height>
-     </rect>
-    </property>
-    <property name="autoFillBackground">
-     <bool>false</bool>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="pixmap">
-     <pixmap>../../UDESC/2020 - Corona Vírus/Relatório 6 - Boost Bridgeless/Boost Half Bridge.png</pixmap>
     </property>
    </widget>
   </widget>

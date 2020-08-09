@@ -124,7 +124,6 @@ class Transformer:
     def recalculate_winding(self, ku, circuit_features=None):
         resolved = False
         while not resolved:
-            n = [0, 0]
             n = [np.random.randint(1, 200), np.random.randint(1, 200)]
             if circuit_features:
                 while not found:
@@ -172,12 +171,14 @@ class Switch:
 
 
 class Diode:
-    def __init__(self, vd, rt):
+    def __init__(self, vd, rt, Vmax):
         self.Vd = vd
         self.Rt = rt
+        self.Vmax = Vmax
 
 
 class Capacitor:
-    def __init__(self, C, Rse):
+    def __init__(self, C, Rse, Vmax):
         self.C = C
         self.RSE = Rse
+        self.Vmax = Vmax

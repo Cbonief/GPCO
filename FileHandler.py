@@ -73,7 +73,7 @@ def load_capacitor(filename):
             param[variable_name] = float(value)
         else:
             component_name = value
-    new_capacitor = Capacitor(param["C"], param["Rse"])
+    new_capacitor = Capacitor(param["C"], param["Rse"], param['Vmax'])
     return [new_capacitor, component_name]
 
 
@@ -101,7 +101,7 @@ def load_diode(filename):
             param[variable_name] = float(value)
         else:
             component_name = value
-    new_diode = Diode(param["Vd"], param["Rt"])
+    new_diode = Diode(param["Vd"], param["Rt"], param['Vmax'])
     return [new_diode, component_name]
 
 
@@ -168,4 +168,3 @@ def load_all_dissipators():
         [cable, name] = load_dissipator(str(filepath))
         Cables[name] = cable
     return Cables
-

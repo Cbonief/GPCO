@@ -1,22 +1,23 @@
-import numpy as np
 from Converter.BoostHalfBridge import BoostHalfBridgeInverter
 from Converter.Components import *
+from scipy.optimize import minimize
+
 
 class GeneticOptimizer:
 
-    def __init__(self, switches, diodes, cores, cables, capacitors, circuit_features, safety_params, dissipators = None):
+    def __init__(self, selected_components, circuit_features, safety_params):
         self.Switches = []
         self.Diodes = []
-        self.Cores = cores
-        self.Cables = cables
-        self.Dissipators = dissipators
+        self.Cores = selected_components['Cores']
+        self.Cables = selected_components['Cables']
+        self.Dissipators = None
         self.Capacitors = []
         self.CircuitFeatures = circuit_features
         self.SafetyParams = safety_params
         self.population = []
         self.population_size = None
 
-        self.preselection(switches, diodes, capacitors)
+        self.preselection(selected_components['Switches'], selected_components['Diodes'], selected_components['Capacitors'])
 
     # Removes elements from the list that will not under any circuntances, be feasible in the given circuit.
     def preselection(self, switches, diodes, capacitors):
@@ -25,38 +26,37 @@ class GeneticOptimizer:
         c = []
         for n in range(0, 4):
             c.append([])
+
         for capacitor in capacitors:
-            if capacitor.Vmax > self.SafetyParams['Vc1']*max(self.CircuitFeatures['Vi']['Min']*self.CircuitFeatures['D']['Max']/(1-self.CircuitFeatures['D']['Max']), self.CircuitFeatures['Vi']['Max']*self.CircuitFeatures['D']['Min']/(1-self.CircuitFeatures['D']['Min'])):
+            if capacitor.Vmax > self.SafetyParams['Vc']*max(self.CircuitFeatures['Vi']['Min']*self.CircuitFeatures['D']['Max']/(1-self.CircuitFeatures['D']['Max']), self.CircuitFeatures['Vi']['Max']*self.CircuitFeatures['D']['Min']/(1-self.CircuitFeatures['D']['Min'])):
                 c[0].append(capacitor)
-            if capacitor.Vmax > self.SafetyParams['Vc2']*self.CircuitFeatures['Vi']['Max']:
+            if capacitor.Vmax > self.SafetyParams['Vc']*self.CircuitFeatures['Vi']['Max']:
                 c[1].append(capacitor)
-            if capacitor.Vmax > self.SafetyParams['Vco']*self.CircuitFeatures['Vo']/4:
+            if capacitor.Vmax > self.SafetyParams['Vc']*self.CircuitFeatures['Vo']/4:
                 c[2].append(capacitor)
                 c[3].append(capacitor)
-        for n in range(0, 4):
-            self.Capacitors.append(c[n])
+        self.Capacitors = c
 
         # Preselection of diodes.
         d = []
         for n in range(0, 2):
             d.append([])
         for diode in diodes:
-            if diode.Vmax > self.SafetyParams['Vdo']*self.CircuitFeatures['Vo']:
-                d[0].append(capacitor)
-                d[1].append(capacitor)
-        for n in range(0, 2):
-            self.Diodes.append(d[n])
-
-        # Preselection of switches.
-        s = []
-        for n in range(0, 2):
-            s.append([])
-        for switch in switches:
-            if switch.Vmax > self.SafetyParams['Vs'] * self.CircuitFeatures['Vi']['Max']/(1-self.CircuitFeatures['D']['Min']):
-                s[0].append(capacitor)
-                s[1].append(capacitor)
-        for n in range(0, 2):
-            self.Switches.append(s[n])
+            if diode.Vmax > self.SafetyParams['Vd']*self.CircuitFeatures['Vo']:
+                d[0].append(diode)
+                d[1].append(diode)
+        self.Diodes = d
+        #
+        # # Preselection of switches.
+        # s = []
+        # for n in range(0, 2):
+        #     s.append([])
+        # for switch in switches:
+        #     if switch.Vmax > self.SafetyParams['Vs'] * self.CircuitFeatures['Vi']['Max']/(1-self.CircuitFeatures['D']['Min']):
+        #         s[0].append(capacitor)
+        #         s[1].append(capacitor)
+        # for n in range(0, 2):
+        #     self.Switches.append(s[n])
 
     def generate_circuit(self):
         # Chooses the switches, capacitors and diodes for the circuit.
@@ -247,12 +247,12 @@ class GeneticOptimizer:
             parent2_gene = self.population[parent2].get_parameter(gene_type)
             offspring.set_parameter(gene_type, parent2_gene)
 
-        if not offspring.Transformer.is_feasible(self.SafetyParams['ku']):
-            offspring.Transformer.recalculate_winding(self.SafetyParams['ku'], self.CircuitFeatures)
-        if not offspring.EntranceInductor.is_feasible(self.SafetyParams['ku']):
-            offspring.EntranceInductor.recalculate_winding(self.SafetyParams['ku'])
-        if not offspring.AuxiliaryInductor.is_feasible(self.SafetyParams['ku']):
-            offspring.AuxiliaryInductor.recalculate_winding(self.SafetyParams['ku'])
+        if not offspring.Transformer.is_feasible(self.SafetyParams['ku']['Transformer']):
+            offspring.Transformer.recalculate_winding(self.SafetyParams['ku']['Transformer'], self.CircuitFeatures)
+        if not offspring.EntranceInductor.is_feasible(self.SafetyParams['ku']['EntranceInductor']):
+            offspring.EntranceInductor.recalculate_winding(self.SafetyParams['ku']['EntranceInductor'])
+        if not offspring.AuxiliaryInductor.is_feasible(self.SafetyParams['ku']['AuxiliaryInductor']):
+            offspring.AuxiliaryInductor.recalculate_winding(self.SafetyParams['ku']['AuxiliaryInductor'])
 
         return offspring
 
@@ -261,7 +261,28 @@ class GeneticOptimizer:
         # Nada
 
 
-def rescale(vector, bounds, function=None):
+def OptimizeConverter(converter, bounds=None, epochs=100, algorithm='SLSQP'):
+    converter.first_run = True
+    x0 = [40e3, 1e8 * 0.0002562, 1e10 * 1e-6]
+    sol = minimize(
+        converter.compensated_total_loss,
+        x0,
+        method=algorithm,
+        options={'maxiter': epochs, 'disp': True, 'ftol': 1e-6, 'eps': 1e-4},
+        bounds=bounds,
+        constraints={'fun': converter.total_constraint, 'type': 'ineq'}
+    )
+    solution = {
+        'x': sol.x,
+        'feasible': sol.sucess
+    }
+    print(solution)
+    print([solution.x[0], solution.x[1] / 1e8, solution.x[2] / 1e10])
+    return solution
+
+
+
+def rescale(vector, bounds, function = None):
     xmax = max(vector)
     xmin = min(vector)
     a = (bounds[1] - bounds[0]) / (xmax - xmin)
@@ -273,7 +294,7 @@ def rescale(vector, bounds, function=None):
             rescaled[index] = function(rescaled[index])
     return rescaled
 
-def clamp(number, lower_bound, upper_bound=None):
+def clamp(number, lower_bound, upper_bound = None):
     if number < lower_bound:
         return lower_bound
     if number > upper_bound:

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'MainWindow.ui'
+# Form implementation generated from reading ui file 'MainWindow2.ui'
 #
 # Created by: PyQt5 UI code generator 5.13.0
 #
@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setMaximumSize(QtCore.QSize(1080, 1080))
         self.centralwidget.setObjectName("centralwidget")
         self.graphWidget = MplWidget(self.centralwidget)
-        self.graphWidget.setGeometry(QtCore.QRect(410, 390, 360, 280))
+        self.graphWidget.setGeometry(QtCore.QRect(490, 100, 360, 280))
         self.graphWidget.setMinimumSize(QtCore.QSize(360, 280))
         self.graphWidget.setObjectName("graphWidget")
         self.layoutWidget = QtWidgets.QWidget(self.centralwidget)
@@ -398,11 +398,8 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addItem(spacerItem40)
         self.verticalLayout.addLayout(self.verticalLayout_3)
         self.optimize_button = QtWidgets.QPushButton(self.centralwidget)
-        self.optimize_button.setGeometry(QtCore.QRect(550, 350, 75, 23))
+        self.optimize_button.setGeometry(QtCore.QRect(630, 60, 75, 23))
         self.optimize_button.setObjectName("optimize_button")
-        self.graphicsView = CircuitView(self.centralwidget)
-        self.graphicsView.setGeometry(QtCore.QRect(380, 30, 256, 192))
-        self.graphicsView.setObjectName("graphicsView")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1080, 21))
@@ -527,5 +524,4 @@ class Ui_MainWindow(object):
         self.actionComo_utilizar_o_otimizador.setText(_translate("MainWindow", "Como utilizar o otimizador?"))
         self.actionCarregar_Arquivo.setText(_translate("MainWindow", "Carregar Arquivo"))
         self.actionComponentes.setText(_translate("MainWindow", "Componentes"))
-from GUI.circuitview import CircuitView
-from GUI.mplwidget import MplWidget
+from mplwidget import MplWidget

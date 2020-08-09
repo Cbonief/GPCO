@@ -1,6 +1,5 @@
 from Converter.Restrictions import *
 from Converter.Losses import *
-from scipy.optimize import minimize
 import numpy as np
 
 Losses = []
@@ -34,24 +33,6 @@ class BoostHalfBridgeInverter:
         self.first_run = True
         self.Dissipators = dissipators
         self.feasibility = False
-
-    def optimize(self, epochs=100, algorithm='SLSQP'):
-        self.first_run = True
-        x0 = [40e3, 1e8*0.0002562, 1e10*1e-6]
-        bounds = ((10e3, 100e3), (1e4, 1e6), (1e10*1e-7, 1e10*1e-5))
-        eps = [1e1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]
-        solution = minimize(
-                            self.compensated_total_loss,
-                            x0,
-                            method=algorithm,
-                            options={'maxiter': epochs, 'disp': True, 'ftol': 1e-6, 'eps': 1e-4},
-                            bounds=bounds,
-                            constraints={'fun': self.total_constraint, 'type': 'ineq'}
-        )
-        print(solution)
-        print([solution.x[0], solution.x[1]/1e8, solution.x[2]/1e10])
-        self.feasibility = solution.success
-        return [solution.x[0], solution.x[1]/1e8, solution.x[2]/1e10]
 
     """ 
     Calculates the objective function, defined by the ALAG Method
