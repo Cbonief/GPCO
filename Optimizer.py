@@ -261,28 +261,48 @@ class GeneticOptimizer:
         # Nada
 
 
-def OptimizeConverter(converter, bounds=None, epochs=100, algorithm='SLSQP'):
+def OptimizeConverter(converter, epochs=100, algorithm='SLSQP', input_scale=None):
+    if input_scale is None:
+        input_scale = [1, 1e8, 1e11]
     converter.first_run = True
-    x0 = [40e3, 1e8 * 0.0002562, 1e10 * 1e-6]
+
+    Dmin = converter.Features['D']['Min']
+    Dmax = converter.Features['D']['Max']
+    Vmin = converter.Features['Vi']['Min']
+    Vmax = converter.Features['Vi']['Max']
+    Po = converter.Features['Po']
+    Vo = converter.Features['Vo']
+
+    # Verifies the upper bound for the frequency.
+    f_upper = [(2*converter.EntranceInductor.Penetration_base/converter.EntranceInductor.Cable.Dcu)**2]
+    f_lower = [
+        max(((1-Dmin)**2)/(Vmax*Dmin), ((1-Dmax)**2)/(Vmin*Dmax))*Po/(4*converter.Capacitors[0].C*converter.Features['dVc1']),
+        max((1-Dmax)/Vmin**2, (1-Dmin)/Vmax**2)*Po/(converter.Capacitors[1].C*converter.Features['dVc2']),
+        Dmax*Po/(converter.Capacitors[2].C*converter.Features['dVo_max']*Vo**2),
+        (1-Dmin)*Po/(converter.Capacitors[3].C*converter.Features['dVo_max']*Vo**2)
+    ]
+
+    print(max(f_lower))
+
+    bounds = ((max(f_lower), min(f_upper)), (1e7*0.0002562, 1e9*0.0002562), (1e10*0.5e-6, 1e12*0.5e-6))
+
+    print(bounds)
+
+    x0 = np.array([40e3, 1e8*0.0002562, 1e11*0.5e-6])
     sol = minimize(
-        converter.compensated_total_loss,
+        lambda x: converter.compensated_total_loss([a/b for a, b in zip(x, input_scale)]),
         x0,
         method=algorithm,
-        options={'maxiter': epochs, 'disp': True, 'ftol': 1e-6, 'eps': 1e-4},
+        tol = 1e-10,
+        options={'maxiter': epochs, 'disp': True},
         bounds=bounds,
-        constraints={'fun': converter.total_constraint, 'type': 'ineq'}
+        constraints={'fun': lambda x: converter.total_constraint([a/b for a, b in zip(x, input_scale)]), 'type': 'ineq'}
     )
-    solution = {
-        'x': sol.x,
-        'feasible': sol.sucess
-    }
-    print(solution)
-    print([solution.x[0], solution.x[1] / 1e8, solution.x[2] / 1e10])
-    return solution
+    print(sol)
+    return sol
 
 
-
-def rescale(vector, bounds, function = None):
+def rescale(vector, bounds, function=None):
     xmax = max(vector)
     xmin = min(vector)
     a = (bounds[1] - bounds[0]) / (xmax - xmin)
@@ -294,7 +314,8 @@ def rescale(vector, bounds, function = None):
             rescaled[index] = function(rescaled[index])
     return rescaled
 
-def clamp(number, lower_bound, upper_bound = None):
+
+def clamp(number, lower_bound, upper_bound=None):
     if number < lower_bound:
         return lower_bound
     if number > upper_bound:

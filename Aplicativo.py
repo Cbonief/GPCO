@@ -22,13 +22,7 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.connect_actions()
 
-        scene = QGraphicsScene(self.centralwidget)
-        self.graphicsView.setScene(scene)
-
-        rect = scene.addRect(10, 10, 40, 40)
-        rect2 = scene.addRect(40, 40, 40, 40)
-
-        #Load general info.
+        # Load general info.
         self.cores_database = FileHandler.load_all_cores()
         self.cables_database = FileHandler.load_all_cables()
         self.switches_database = FileHandler.load_all_switches()
@@ -192,6 +186,7 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
     def read_file(self, filename):
         if filename:
             with open(filename, "r") as read_file:
+                print(filename)
                 data = json.load(read_file)
                 self.selected_components = data[0]
                 self.available_components = data[1]
@@ -343,6 +338,7 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         for name in self.selected_components['Diodes']:
             components['Diodes'].append(self.diodes_database[name])
         return components
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

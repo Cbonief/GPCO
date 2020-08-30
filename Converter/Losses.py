@@ -1,7 +1,5 @@
 from Converter.auxiliary_functions import *
 
-uo = 4*np.pi*1e-4
-
 
 def SimulateCircuit(obj, X):
 
@@ -11,39 +9,50 @@ def SimulateCircuit(obj, X):
     obj.AuxiliaryInductor.calculate_rca(X[0], 40)
 
     fs = X[0]
-    Li = X[1]/1e8
-    # lg2 = X[2]
+    Li = X[1]
+    Lk = X[2]
     eff = X[3]
-    Lk = X[2]/1e10
+
     Ts = 1 / fs
+
     V = vc3_vc4_d(obj, fs, Lk)
     Vc3 = V[0]
     Vc4 = V[1]
     obj.Features['D']['Nominal'] = V[2]
     Vo = Vc3 + Vc4
+
     CalculatedValues = {
         'Ts': Ts,
         'Vc3': Vc3,
         'Vc4': Vc4,
         'Vo': Vo
     }
+
     T = t3t6(obj, CalculatedValues)
     t3 = T[0]
     t6 = T[1]
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
-    Ro = (Vo ** 2) / obj.Features['Po']
+    print(D)
+    Po = obj.Features['Po']
+    Vi = obj.Features['Vi']['Nominal']
+    Ro = obj.Features['Ro']
     Vc1 = Vi * D / (1 - D)
     Vc2 = Vi
     n = obj.Transformer.Ratio
+
+
+    dIin = Vi * D * Ts / Li
+    Iin = (Po / (Vi*eff))
+    Ipk = Iin + (dIin / 2)
+    Imin = Iin - (dIin / 2)
+
     Ipk_pos = 2 * n * Vo / (Ro * (1-D))
     Ipk_neg = -2 * n * Vo / (Ro * D)
     Ipk_pos_1 = 2 * n * Ts * Vo / (Ro * (Ts + t3 - t6))
     Ipk_neg_1 = 2 * n * Ts * Vo / (Ro * (t3 - t6))
-    dIin = Vi * D * Ts / Li
-    Po = obj.Features['Po']
-    Ipk = (Po / (Vi*eff)) + dIin / 2
-    Imin = (Po / (Vi*eff)) - dIin / 2
+    
+
+    
     Io = Po / Vo
     dBLi = (Vi * D / (fs * obj.EntranceInductor.N * obj.EntranceInductor.Core.Ae)) / 2
     BmaxLi = Li*Ipk/(obj.EntranceInductor.N*obj.EntranceInductor.Core.Ae)
@@ -62,7 +71,7 @@ def SimulateCircuit(obj, X):
         'Ipk_neg_1': Ipk_neg_1,
         'Ipk': Ipk,
         'Imin': Imin,
-        'Iin': (Imin + Ipk)/2,
+        'Iin': Iin,
         'Li': Li,
         'Lk': Lk,
         'Io': Io,
@@ -87,10 +96,10 @@ def SimulateCircuit(obj, X):
     CalculatedValues['C4Irms'] = C4Irms(obj, CalculatedValues)
     CalculatedValues['TransformerHarmonics'] = TransformerCurrentHarmonics(obj, CalculatedValues)
     CalculatedValues['EntranceInductorHarmonics'] = InputCurrentHarmonics(obj, CalculatedValues)
+    CalculatedValues['LiIrms'] = LiIrms(obj, CalculatedValues)
     LkVrms = AuxiliaryInductorVrms(obj, CalculatedValues)
     CalculatedValues['LkVrms'] = LkVrms
     CalculatedValues['BmaxLk'] = LkVrms/(obj.AuxiliaryInductor.Core.Ae*fs*7*obj.AuxiliaryInductor.N)
-    # print('BmaxLk = ', CalculatedValues['BmaxLk'])
     return CalculatedValues
 
 
@@ -99,7 +108,6 @@ def Transformer_Core_Loss(obj, X):
     k1 = obj.Features['Bmax']['Transformer'] ** obj.Transformer.Core.Beta
     k2 = obj.Transformer.Core.Ve*obj.Transformer.Core.Kc
     core_loss = 1e3*k1*k2*(fs**obj.Transformer.Core.Alpha)
-    # print("Perdas no núcleo do Trafo = " + str(CoreLoss))
     return core_loss
 
 
@@ -120,10 +128,6 @@ def Transformer_Cable_Loss(obj, X):
         cable_loss_primary += obj.Transformer.Primary.get_rca(n)*(harmonics[n]**2)*aux1
         cable_loss_secondary += obj.Transformer.Secondary.get_rca(n)*((harmonics[n]/obj.Transformer.Ratio)**2)*aux2
     cable_loss_total = cable_loss_primary + cable_loss_secondary
-
-    # print("Perdas no primário do Trafo = " + str(cable_loss_primary))
-    # print("Perdas no secundário do Trafo = " + str(cable_loss_secondary))
-    # print("Perdas nos cabos do Trafo = " + str(cable_loss_total))
     return cable_loss_total
 
 # Atualizada
@@ -133,7 +137,6 @@ def EntranceInductor_Core_Loss(obj, X):
     DeltaB = obj.CalculatedValues['dBLi']
     k1 = DeltaB ** obj.EntranceInductor.Core.Beta
     CoreLoss = 1e3*k1*k2*(fs ** obj.EntranceInductor.Core.Alpha)
-    # print("Perdas no núcleo do Indutor = " + str(CoreLoss))
     return CoreLoss
 
 
@@ -145,7 +148,6 @@ def EntranceIndutor_Cable_Loss(obj, X):
         if n == 0:
             aux = 1
         cable_loss += obj.EntranceInductor.get_rca(n) * (harmonics[n] ** 2) * aux
-    # print(cable_loss)
     return cable_loss
 
 
@@ -155,7 +157,6 @@ def AuxiliaryInductor_Core_Loss(obj, X):
     bmax = obj.CalculatedValues['BmaxLk']
     k1 = bmax ** obj.AuxiliaryInductor.Core.Beta
     CoreLoss = 1e3 * k1 * k2 * (fs ** obj.AuxiliaryInductor.Core.Alpha)
-    # print(CoreLoss)
     return CoreLoss
 
 
@@ -167,7 +168,6 @@ def AuxiliaryInductor_Cable_Loss(obj, X):
         if n == 0:
             aux = 1
         cable_loss += obj.AuxiliaryInductor.get_rca(n) * (harmonics[n] ** 2) * aux
-    # print(cable_loss)
     return cable_loss
 
 # Verificado
@@ -175,7 +175,6 @@ def Capacitor1_Loss(obj, X):
     rse = obj.Capacitors[0].RSE
     Irms = obj.CalculatedValues['C1Irms']
     CapacitorLoss = rse*Irms**2
-    #print("Perdas C1 = " + str(CapacitorLoss))
     return CapacitorLoss
 
 # Verificado
@@ -183,7 +182,6 @@ def Capacitor2_Loss(obj, X):
     rse = obj.Capacitors[1].RSE
     Irms = obj.CalculatedValues['C2Irms']
     CapacitorLoss = rse*Irms**2
-    #print("Perdas C2 = " + str(CapacitorLoss))
     return CapacitorLoss
 
 # Verificado
@@ -219,13 +217,11 @@ def Switch1_Loss(obj, X):
     fs = X[0]
     Is1max = obj.CalculatedValues['Is1max']
     S1Irms = obj.CalculatedValues['S1Irms']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     D = obj.Features['D']['Nominal']
     Vs1max = Vi/(1-D)
     SwitchLoss = (1/2)*Is1max*Vs1max*obj.Switches[0].Toff*fs
-    #print('Perdas de Comutação S1 ' + str(SwitchLoss))
     SwitchLoss = SwitchLoss + obj.Switches[0].Rdson*S1Irms**2
-    #print("Perdas S1 = " + str(SwitchLoss))
     return SwitchLoss
 
 # Verificado
@@ -233,7 +229,7 @@ def Switch2_Loss(obj, X):
     fs = X[0]
     Is2max = obj.CalculatedValues['Is2max']
     S2Irms = obj.CalculatedValues['S2Irms']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     D = obj.Features['D']['Nominal']
     Vs2max = Vi / (1 - D)
     SwitchLoss = (1 / 2) * Is2max * Vs2max * obj.Switches[1].Toff * fs
@@ -247,3 +243,20 @@ AuxiliaryInductorLosses = [AuxiliaryInductor_Core_Loss, AuxiliaryInductor_Cable_
 CapacitorLosses = [Capacitor1_Loss, Capacitor2_Loss, Capacitor3_Loss, Capacitor4_Loss]
 DiodeLosses = [Diode3_Loss, Diode4_Loss]
 SwitchLosses = [Switch1_Loss, Switch2_Loss]
+
+# ConverterLosses = []
+# ConverterLosses.extend(TransformerLosses)
+# ConverterLosses.extend(EntranceInductorLosses)
+# ConverterLosses.extend(AuxiliaryInductorLosses)
+# ConverterLosses.extend(CapacitorLosses)
+# ConverterLosses.extend(DiodeLosses)
+# ConverterLosses.extend(SwitchLosses)
+
+ConverterLosses = {
+    'Transformer': {'Core': Transformer_Core_Loss, 'Cable': Transformer_Cable_Loss},
+    'EntranceInductor': {'Core': EntranceInductor_Core_Loss, 'Cable': EntranceIndutor_Cable_Loss},
+    'AuxiliaryInductor': {'Core': AuxiliaryInductor_Core_Loss, 'Cable': AuxiliaryInductor_Cable_Loss},
+    'Capacitors': {'C1': Capacitor1_Loss, 'C2': Capacitor2_Loss, 'C3': Capacitor3_Loss, 'C4': Capacitor4_Loss},
+    'Diode': {'D3': Diode3_Loss, 'D4': Diode4_Loss},
+    'Switches': {'S1': Switch1_Loss, 'S2': Switch2_Loss}
+}

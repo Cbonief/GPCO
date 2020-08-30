@@ -12,8 +12,8 @@ def fvo(X, k1, k2, Vo):
 def vc3_vc4_d(obj, fs, Lk):
     Ts = 1 / fs
     x0 = [obj.Features['Vo'] / 2, obj.Features['Vo'] / 2, 0.5]
-    k1 = obj.Features['Ro'] * Ts / (2 * Lk * obj.Features['Vi'] * (obj.Transformer.Ratio ** 3))
-    k2 = obj.Transformer.Ratio * obj.Features['Vi']
+    k1 = obj.Features['Ro'] * Ts / (2 * Lk * obj.Features['Vi']['Nominal'] * (obj.Transformer.Ratio ** 3))
+    k2 = obj.Transformer.Ratio * obj.Features['Vi']['Nominal']
     sol = fsolve(fvo, x0, args=(k1, k2, obj.Features['Vo']))
     return sol
 
@@ -21,7 +21,7 @@ def vc3_vc4_d(obj, fs, Lk):
 def VoDx(k1, k2, X, D=0.55):
     Vc3 = X[0]
     Vc4 = X[1]
-    # D = obj.Features['D']['Nominal']
+    
     f1 = (Vc3 + Vc4) ** 3 + k1 * (Vc3 ** 2) * (Vc4 - k2) * (Vc4 * (1 - D) + D * k2) + 1 / (10*Vc3) + 1 / (10*Vc4) + 1/(1000*(Vc3 + Vc4))
     f2 = (Vc3 + Vc4) ** 3 + k1 * (Vc4 ** 2) * (Vc3 + k2) * (Vc3 * (1 - D) - D * k2) + 1 / (10*Vc3) + 1 / (10*Vc4) + 1/(1000*(Vc3 + Vc4))
 
@@ -43,8 +43,8 @@ def Vc3Vc4(obj, fs, Lk):
     Ts = 1/fs
     X = np.array([obj.Features['Vo'] / 2, obj.Features['Vo'] / 2])
     error = 1
-    k1 = obj.Features['Ro'] * Ts / (2 * Lk * obj.Features['Vi'] * (obj.Transformer.Ratio ** 3))
-    k2 = obj.Transformer.Ratio * obj.Features['Vi']
+    k1 = obj.Features['Ro'] * Ts / (2 * Lk * obj.Features['Vi']['Nominal'] * (obj.Transformer.Ratio ** 3))
+    k2 = obj.Transformer.Ratio * obj.Features['Vi']['Nominal']
     while error > 0.001:
         dx = VoDx(k1, k2, X)
         error = dx[0] ** 2 + dx[1] ** 2
@@ -58,7 +58,7 @@ def t3t6(obj, CalculatedValues):
     Vo = CalculatedValues['Vo']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
 
     n = obj.Transformer.Ratio
 
@@ -70,8 +70,8 @@ def OutputVoltage(obj, fs, Lk, D):
     Ts = 1/fs
     X = np.array([obj.Features['Vo'] / 2, obj.Features['Vo'] / 2])
     error = 1
-    k1 = obj.Features['Ro'] * Ts / (2 * Lk * obj.Features['Vi'] * (obj.Transformer.Ratio ** 3))
-    k2 = obj.Transformer.Ratio * obj.Features['Vi']
+    k1 = obj.Features['Ro'] * Ts / (2 * Lk * obj.Features['Vi']['Nominal'] * (obj.Transformer.Ratio ** 3))
+    k2 = obj.Transformer.Ratio * obj.Features['Vi']['Nominal']
     while error > 0.001:
         dx = VoDx(k1, k2, X, D)
         error = dx[0] ** 2 + dx[1] ** 2
@@ -158,16 +158,26 @@ def TransformerCurrentHarmonics(obj, CalculatedValues):
     B = [- (Vc2 + Vc3 / n) / Lk, (Vc4 / n - Vc2) / Lk, (Vc4 / n + Vc1) / Lk, (Vc1 - Vc3 / n) / Lk]
     Tf = [t3, D * Ts, t6, Ts]
     Ti = [0, t3, D*Ts, t6]
-    Harmonics = fourier_piecewise_linear(A, B, Ti, Tf, 1/Ts, 40)
-    # x = range(0, 40)
 
-    # fig2 = plt.figure()
-    # ax2 = plt.axes()
-    # plt.bar(x, Harmonics)
-    # plt.grid()
-    # plt.xlabel('N-ésima Harmônica', fontsize=15)
-    # plt.ylabel('Amplitude (A)', fontsize=15)
+
+    Harmonics = fourier_piecewise_linear(A, B, Ti, Tf, 1/Ts, 40)
     return Harmonics
+
+
+def LiIrms(obj, CalculatedValues):
+    Ts = CalculatedValues['Ts']
+    dIin = CalculatedValues['dIin']
+    Imax = CalculatedValues['Ipk']
+    Imin = CalculatedValues['Imin']
+
+    D = obj.Features['D']['Nominal']
+    A = [Imin, Imax]
+    B = [dIin, -dIin]
+    Tf = [D*Ts, Ts]
+    Ti = [0, D*Ts]
+
+    harmonics = rms_piecewise_linear(A, B, Ti, Tf, Ts)
+    return harmonics
 
 
 def InputCurrentHarmonics(obj, CalculatedValues):
@@ -181,19 +191,8 @@ def InputCurrentHarmonics(obj, CalculatedValues):
     B = [dIin, -dIin]
     Tf = [D*Ts, Ts]
     Ti = [0, D*Ts]
-    # print('A = ', A)
-    # print('B = ', B)
-    # print('Tf = ', Tf)
-    # print('Ti = ', Ti)
+
     harmonics = fourier_piecewise_linear(A, B, Ti, Tf, 1 / Ts, 40)
-    # x = range(0, 40)
-    #
-    # fig3 = plt.figure()
-    # ax3 = plt.axes()
-    # plt.bar(x, harmonics)
-    # plt.grid()
-    # plt.xlabel('N-ésima Harmônica', fontsize=15)
-    # plt.ylabel('Amplitude (A)', fontsize=15)
     return harmonics
 
 
@@ -207,7 +206,7 @@ def c1_irms(obj, CalculatedValues):
     Li = CalculatedValues['Li']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
     dt1 = t6 - D * Ts
@@ -235,7 +234,7 @@ def c2_irms(obj, CalculatedValues):
     Li = CalculatedValues['Li']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
     dt2 = (D * Ts - t3)
@@ -265,7 +264,7 @@ def s1_irms(obj, CalculatedValues):
     Li = CalculatedValues['Li']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
 
@@ -289,7 +288,7 @@ def s2_irms(obj, CalculatedValues):
     Li = CalculatedValues['Li']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
 
@@ -301,6 +300,7 @@ def s2_irms(obj, CalculatedValues):
     #print('Correte Is2 ' + str(Is2_rms))
     return Is2_rms
 
+
 def D3Iavg(obj, CalculatedValues):
     Ts = CalculatedValues['Ts']
     Vc3 = CalculatedValues['Vc3']
@@ -309,7 +309,7 @@ def D3Iavg(obj, CalculatedValues):
     Ipk_pos_1 = CalculatedValues['Ipk_pos_1']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
 
@@ -317,6 +317,7 @@ def D3Iavg(obj, CalculatedValues):
     Id3_avg = Id3_avg + (Vi*D/(1-D) - Vc3/n)*((Ts-t6)**2)/(2*n*Lk)
     Id3_avg = Id3_avg/Ts
     return Id3_avg
+
 
 def D3Irms(obj, CalculatedValues):
     Ts = CalculatedValues['Ts']
@@ -326,7 +327,7 @@ def D3Irms(obj, CalculatedValues):
     Ipk_pos_1 = CalculatedValues['Ipk_pos_1']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
 
@@ -334,6 +335,7 @@ def D3Irms(obj, CalculatedValues):
     Id3_rms = Id3_rms + ((Ts-t6)**3)*(((Vi*D/(1-D) - Vc3/n)/(n*Lk))**2)/3
     Id3_rms = np.sqrt(Id3_rms/Ts)
     return Id3_rms
+
 
 def D4Iavg(obj, CalculatedValues):
     Ts = CalculatedValues['Ts']
@@ -343,7 +345,7 @@ def D4Iavg(obj, CalculatedValues):
     Ipk_neg_1 = CalculatedValues['Ipk_neg_1']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
 
@@ -351,6 +353,7 @@ def D4Iavg(obj, CalculatedValues):
     Id4_avg = Id4_avg - (-Vi + Vc4/n)*((D*Ts-t3)**2)/(2*n*Lk)
     Id4_avg = Id4_avg/Ts
     return Id4_avg
+
 
 def D4Irms(obj, CalculatedValues):
     Ts = CalculatedValues['Ts']
@@ -360,7 +363,7 @@ def D4Irms(obj, CalculatedValues):
     Ipk_neg_1 = CalculatedValues['Ipk_neg_1']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
 
@@ -369,6 +372,7 @@ def D4Irms(obj, CalculatedValues):
     Id4_rms = Id4_rms + (((t6-D*Ts)**3)/3)*((Vc4/n + Vi*D/(1-D))/(n*Lk))**2
     Id4_rms = np.sqrt(Id4_rms/Ts)
     return Id4_rms
+
 
 def C3Irms(obj, CalculatedValues):
     Ts = CalculatedValues['Ts']
@@ -379,7 +383,7 @@ def C3Irms(obj, CalculatedValues):
     Io = CalculatedValues['Io']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
 
@@ -390,6 +394,7 @@ def C3Irms(obj, CalculatedValues):
     Ic3_rms = np.sqrt(Ic3_rms/Ts)
     return Ic3_rms
 
+
 def C4Irms(obj, CalculatedValues):
     Ts = CalculatedValues['Ts']
     Vc4 = CalculatedValues['Vc4']
@@ -399,7 +404,7 @@ def C4Irms(obj, CalculatedValues):
     Io = CalculatedValues['Io']
 
     D = obj.Features['D']['Nominal']
-    Vi = obj.Features['Vi']
+    Vi = obj.Features['Vi']['Nominal']
     n = obj.Transformer.Ratio
     Lk = CalculatedValues['Lk']
 
@@ -461,6 +466,7 @@ def rms_piecewise_linear(A, B, Ti, Tf, Ts):
         rms += (tf - ti)*(a - b*ti)**2 + (tf**2 - ti**2)*(a-b*ti)*b + (tf**3 - ti**3)*(b**2)/3
     rms = np.sqrt(rms/Ts)
     return rms
+
 
 def f1(delta):
     return (np.sinh(2*delta) + np.sin(2*delta))/(np.cosh(2*delta) - np.cos(2*delta))

@@ -1,7 +1,7 @@
 import numpy as np
 from Converter import auxiliary_functions as af
 
-uo = 4*np.pi*1e-4
+uo = 4*np.pi*1e-7
 
 
 def loadFSD():

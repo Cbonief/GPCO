@@ -2,28 +2,31 @@ from Converter.Restrictions import *
 from Converter.Losses import *
 import numpy as np
 
-Losses = []
-Losses.extend(TransformerLosses)
-Losses.extend(EntranceInductorLosses)
-Losses.extend(AuxiliaryInductorLosses)
-Losses.extend(CapacitorLosses)
-Losses.extend(DiodeLosses)
-Losses.extend(SwitchLosses)
-
-Restrictions = [dIin_max, bmax_Li, bmax_Lk]
+Restrictions = []
+Restrictions.extend(EntranceInductorRestrictions)
+# Restrictions.extend(AuxiliaryInductorRestrictions)
 
 
 class BoostHalfBridgeInverter:
 
-    def __init__(self, transformer, entrance_inductor, auxiliary_inductor, circuit_features, switches, diodes, capacitors, dissipators=None):
+    def __init__(self, transformer, entrance_inductor, auxiliary_inductor, circuit_features, switches, diodes, capacitors, safety_params,dissipators=None):
         self.ConverterLosses = []
         self.CalculatedValues = {}
-        for loss in Losses:
-            self.ConverterLosses.append({'active': True, 'function': loss})
+        self.ConverterLosses = ConverterLosses
+        self.ConverterLossesActivationTable = {
+            'Transformer': {'Core': True, 'Cable': True},
+            'EntranceInductor': {'Core': True, 'Cable': True},
+            'AuxiliaryInductor': {'Core': True, 'Cable': True},
+            'Capacitors': {'C1': True, 'C2': True, 'C3': True, 'C4': True},
+            'Diode': {'D3': True, 'D4': True},
+            'Switches': {'S1': True, 'S2': True}
+        }
+
         self.ConverterRestrictions = []
         for restriction in Restrictions:
             self.ConverterRestrictions.append({'active': True, 'function': restriction, 'type': 'inequation'})
         self.Features = circuit_features
+        self.SafetyParams = safety_params
         self.Transformer = transformer
         self.EntranceInductor = entrance_inductor
         self.AuxiliaryInductor = auxiliary_inductor
@@ -57,11 +60,12 @@ class BoostHalfBridgeInverter:
         X: list containing in order: frequency, Li, Lk.
     :return: a single float value.
     """
-    def compensated_total_loss(self, X):
+    def compensated_total_loss(self, X, activation_table=True):
         efficiency = 0.8
         po = self.Features['Po']
         loss = po * (1 - efficiency) / efficiency
         error = 2
+        print('Freq = '+ str(X[0]))
         while error > 0.01:
             loss_last = loss
             loss = self.total_loss([X[0], X[1], X[2], efficiency])
@@ -71,6 +75,22 @@ class BoostHalfBridgeInverter:
             self.first_run = False
         self.CalculatedValues['efficiency'] = efficiency
         return loss
+
+    def compensated_total_loss_separate(self, X, activation_table=True):
+        efficiency = 0.8
+        po = self.Features['Po']
+        total_loss = po * (1 - efficiency) / efficiency
+        error = 2
+        while error > 0.01:
+            loss_last = total_loss
+            losses = self.total_loss_separate([X[0], X[1], X[2], efficiency])
+            total_loss = losses['Total']
+            efficiency = po / (po + total_loss)
+            error = abs(loss_last - total_loss)
+        if self.first_run:
+            self.first_run = False
+        self.CalculatedValues['efficiency'] = efficiency
+        return losses
 
     def compensated_total_loss_vector_input(self, frequency, Li, Lk=None):
         size = np.size(frequency)
@@ -96,11 +116,33 @@ class BoostHalfBridgeInverter:
     def total_loss(self, X):
         output = 0
         self.CalculatedValues = SimulateCircuit(self, X)
-        for loss in self.ConverterLosses:
-            if loss['active']:
-                partial = loss['function'](self, X)
-                output = output + partial
+        for lossClass in self.ConverterLosses:
+            for lossType in self.ConverterLosses[lossClass]:
+                if self.ConverterLossesActivationTable[lossClass][lossType]:
+                    partial = self.ConverterLosses[lossClass][lossType](self, X)
+                    output = output + partial
         return output
+
+    """
+    Calculates the total_loss of the converter, given a frequency, gap widths and efficiency
+    :input:
+        X: list containing in order: frequency, Li, Lk and the efficiency.
+    :return: a single float value.
+    """
+    def total_loss_separate(self, X):
+        output = {}
+        total = 0
+        self.CalculatedValues = SimulateCircuit(self, X)
+        for lossClass in self.ConverterLosses:
+            output[lossClass] = {}
+            for lossType in self.ConverterLosses[lossClass]:
+                if self.ConverterLossesActivationTable[lossClass][lossType]:
+                    partial = self.ConverterLosses[lossClass][lossType](self, X)
+                    output[lossClass][lossType] = partial
+                    total = total + partial
+        output['Total'] = total
+        return output
+
 
     """
     Calculates all the M constraints and returns them in a M sized vector.
@@ -122,6 +164,7 @@ class BoostHalfBridgeInverter:
         for restriction in self.ConverterRestrictions:
             func = restriction['function']
             constraints.append(func(self, [X[0], X[1], X[2], eff], self.CalculatedValues))
+        print(constraints)
         return constraints
 
     """return: the feasibility of the circuit as a boolean"""
