@@ -3,6 +3,8 @@ from matplotlib.pyplot import *
 from Converter.Components import *
 import numpy as np
 
+import time
+
 from Optimizer import *
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
@@ -20,7 +22,9 @@ rho = 1.68e-8
 AWG_23 = Cable(0.5753e-3, 0.5733e-3, rho, 0.999994)
 
 # Cria as chaves.
-switch1 = Switch(30e-9, 30e-9, 3e-3)
+Coss = 370e-12
+Crss = 230e-12
+switch1 = Switch(30e-9, 30e-9, 3e-3, Coss-Crss)
 switch2 = switch1
 
 # Cria os diodos
@@ -44,7 +48,7 @@ print('\nConfigurando conversor')
 circuit_features = {
     'Vo': 400,
     'D': {'Nominal': 0.55, 'Max': 0.7, 'Min': 0.3},
-    'Vi': {'Nominal': 17.4, 'Max': 17.4*1.02, 'Min': 17.4*0.98},
+    'Vi': {'Nominal': 17.4, 'Max': 25, 'Min': 15},
     'Ro': 1231,
     'Po': 130,
     'Bmax': {'Transformer': 0.15, 'EntranceInductor': 0.3, 'AuxiliaryInductor': 0.15},
@@ -77,7 +81,8 @@ Lk = Inductor(core[2], cables[2], N[3], Ncond[3])
 
 converter = BoostHalfBridgeInverter(Trafo, Li, Lk, circuit_features, switches, diodes, capacitors, safety_params)
 
-# solution = optimize_converter(converter)
+solution = optimize_converter(converter)
+print(solution)
 
 Lss = 2.562e-4
 uo = 4*np.pi*1e-7
@@ -85,17 +90,31 @@ lg = (28**2)*uo*NEE_42_20.Ae/Lss
 
 number_of_points = 100
 
-f = np.logspace(3, 5, number_of_points)
-lossVec = np.zeros(number_of_points)
+# f = np.logspace(3, 5, number_of_points)
+# lossVec = np.zeros(number_of_points)
+# t = np.zeros(number_of_points)
 
-last_p = 1
+# last_p = 1
+# mean_time = 0
+# for n in range(0, number_of_points):
+#     p = n
+#     if p != last_p:
+#         print(str(p) + "%")
+#         last_p = p
+#     start = time.time() 
+#     lossVec[n] = converter.compensated_total_loss([f[n], Lss, 0.5e-6])
+#     end = time.time()
+#     t[n] = end - start
+#     mean_time += t[n]
+# mean_time = mean_time/100
+# print(mean_time)
 
-for n in range(0, number_of_points):
-    p = n
-    if p != last_p:
-        print(str(p) + "%")
-        last_p = p
-    lossVec[n] = converter.compensated_total_loss([f[n], Lss, 0.5e-6])
+# var = 0
+# for element in t:
+#     var += (element - mean_time)**2
+
+# var = np.sqrt(var)/100
+# print(var)
     
 # for lossClass in Losses:
 #     print(lossClass)
@@ -108,21 +127,23 @@ for n in range(0, number_of_points):
 #     print(printString1)
 #     print(printString2)
 
-minimo = 100
-bestF = 0
-for [freq, loss] in zip(f, lossVec):
-    if loss < minimo:
-        minimo = loss
-        bestF = freq
+# minimo = 100
+# bestF = 0
+# for [freq, loss] in zip(f, lossVec):
+#     if loss < minimo:
+#         minimo = loss
+#         bestF = freq
 
 
-print(bestF)
+# print(bestF)
 
-figure()
-axes()
-semilogx(f, lossVec)
-xlabel('Frequência (Hz)')
-ylabel('Perdas (W)')
-grid()
-savefig("Saved Data/Figures/Loss_Frequency_Carolina")
-show()
+# print(determine_bounds(converter))
+
+# figure()
+# axes()
+# semilogx(f, lossVec)
+# xlabel('Frequência (Hz)')
+# ylabel('Perdas (W)')
+# grid()
+# savefig("Saved Data/Figures/Loss_Frequency_Carolina")
+# show()

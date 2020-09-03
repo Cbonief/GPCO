@@ -164,10 +164,11 @@ class Transformer:
 
 
 class Switch:
-    def __init__(self, ton, toff, Rdson):
+    def __init__(self, ton, toff, Rdson, Cds=0):
         self.Ton = ton
         self.Toff = toff
         self.Rdson = Rdson
+        self.Cds = Cds
 
 
 class Diode:

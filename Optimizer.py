@@ -1,9 +1,11 @@
 from Converter.BoostHalfBridge import BoostHalfBridgeInverter
 from Converter.Components import *
+from Converter.auxiliary_functions import *
+from Converter.Restrictions import *
 from scipy.optimize import minimize
 
 
-class GeneticOptimizer:
+class genetic_optimizer:
 
     def __init__(self, selected_components, circuit_features, safety_params):
         self.Switches = []
@@ -261,46 +263,128 @@ class GeneticOptimizer:
         # Nada
 
 
-def OptimizeConverter(converter, epochs=100, algorithm='SLSQP', input_scale=None):
+def optimize_converter(converter, epochs=100, algorithm='BFGS', input_scale=None):
     if input_scale is None:
         input_scale = [1, 1e8, 1e11]
-    converter.first_run = True
 
-    Dmin = converter.Features['D']['Min']
-    Dmax = converter.Features['D']['Max']
-    Vmin = converter.Features['Vi']['Min']
-    Vmax = converter.Features['Vi']['Max']
-    Po = converter.Features['Po']
-    Vo = converter.Features['Vo']
-
-    # Verifies the upper bound for the frequency.
-    f_upper = [(2*converter.EntranceInductor.Penetration_base/converter.EntranceInductor.Cable.Dcu)**2]
-    f_lower = [
-        max(((1-Dmin)**2)/(Vmax*Dmin), ((1-Dmax)**2)/(Vmin*Dmax))*Po/(4*converter.Capacitors[0].C*converter.Features['dVc1']),
-        max((1-Dmax)/Vmin**2, (1-Dmin)/Vmax**2)*Po/(converter.Capacitors[1].C*converter.Features['dVc2']),
-        Dmax*Po/(converter.Capacitors[2].C*converter.Features['dVo_max']*Vo**2),
-        (1-Dmin)*Po/(converter.Capacitors[3].C*converter.Features['dVo_max']*Vo**2)
-    ]
-
-    print(max(f_lower))
-
-    bounds = ((max(f_lower), min(f_upper)), (1e7*0.0002562, 1e9*0.0002562), (1e10*0.5e-6, 1e12*0.5e-6))
-
-    print(bounds)
-
-    x0 = np.array([40e3, 1e8*0.0002562, 1e11*0.5e-6])
+    # x0 = find_feasible_point(converter)
+    x0, bounds = find_feasible_point(converter, return_bounds=True)
+    print(x0)
     sol = minimize(
-        lambda x: converter.compensated_total_loss([a/b for a, b in zip(x, input_scale)]),
+        converter.optimality,
         x0,
         method=algorithm,
-        tol = 1e-10,
-        options={'maxiter': epochs, 'disp': True},
-        bounds=bounds,
-        constraints={'fun': lambda x: converter.total_constraint([a/b for a, b in zip(x, input_scale)]), 'type': 'ineq'}
+        tol = 1e-12,
+        options={'maxiter': epochs, 'disp': False, 'ftol': 1e-10}
     )
-    print(sol)
+    print(sol.x)
     return sol
 
+# lambda x: converter.total_constraint([a/b for a, b in zip(x, input_scale)])
+# lambda x: converter.compensated_total_loss([a/b for a, b in zip(x, input_scale)]),
+
+# Uses a penalty method to find a feasible point, this feasible point is used as a starting point for the
+# numeric optimizer.
+def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100):
+    if bounds is None:
+        bounds = determine_bounds(converter)
+
+    ####
+    found_point = False
+    iteration = 0
+    while not found_point and iteration < 100:
+        x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
+        sol = minimize(
+            converter.total_violation,
+            x0,
+            method='SLSQP',
+            tol = 1e-12,
+            options={'maxiter': 100, 'disp': True, 'ftol': 1e-10},
+            bounds=bounds,
+        )
+        feasible_point = sol.x
+        constraints = converter.total_constraint(feasible_point)
+        found_point = True
+        for constraint in constraints:
+            if constraint <= 0:
+                found_point = False
+
+    if return_bounds:
+        return [feasible_point, bounds]
+    else:
+        return feasible_point
+
+
+def determine_bounds(converter):
+    Dmin = converter.design_features['D']['Min']
+    Dmax = converter.design_features['D']['Max']
+    Vmin = converter.design_features['Vi']['Min']
+    Vmax = converter.design_features['Vi']['Max']
+    Po = converter.design_features['Po']
+    Vo = converter.design_features['Vo']
+    Ro = converter.design_features['Ro']
+
+    gap_width_bound = [1e-4, 3e-2]
+
+    Li_upper_bound_last = converter.entrance_inductor.get_inductance(gap_width_bound[0])
+    Li_lower_bound_last = converter.entrance_inductor.get_inductance(gap_width_bound[1])
+    frequency_upper_bound_last = 1e6
+    frequency_lower_bound_last = 100
+
+    done = False
+    while not done:
+        # Frequency bounds
+        frequency_upper_bounds = [
+            (2*converter.entrance_inductor.Penetration_base/converter.entrance_inductor.Cable.Dcu)**2,
+            (2*converter.auxiliary_inductor.Penetration_base/converter.auxiliary_inductor.Cable.Dcu)**2,
+            frequency_upper_bound_last
+        ]
+        frequency_lower_bounds = [
+            max(((1-Dmin)**2)/(Vmax*Dmin), ((1-Dmax)**2)/(Vmin*Dmax))*Po/(4*converter.capacitors[0].C*converter.design_features['dVc1']),
+            max((1-Dmax)/Vmin**2, (1-Dmin)/Vmax**2)*Po/(converter.capacitors[1].C*converter.design_features['dVc2']),
+            Dmax*Po/(converter.capacitors[2].C*converter.design_features['dVo_max']*Vo**2),
+            (1-Dmin)*Po/(converter.capacitors[3].C*converter.design_features['dVo_max']*Vo**2),
+            max(Vmin**2*Dmax, Vmax**2*Dmin)/(Po*converter.design_features['dIin_max']*Li_upper_bound_last),
+            frequency_lower_bound_last
+        ]
+        frequency_lower_bound = max(frequency_lower_bounds)
+        frequency_upper_bound = min(frequency_upper_bounds)
+
+        # Entrance inductance bounds.
+        Li_lower_bounds = [
+            max(Vmin**2*Dmax, Vmax**2*Dmin)/(Po*converter.design_features['dIin_max']*frequency_upper_bound),
+            Li_lower_bound_last
+        ]
+        Li_upper_bounds = [
+            (Vmax/Po)*(converter.design_features['Bmax']['EntranceInductor']*converter.entrance_inductor.N*converter.entrance_inductor.Core.Ae - (Vmax*Dmin/(2*frequency_upper_bound))),
+            (Vmin/Po)*(converter.design_features['Bmax']['EntranceInductor']*converter.entrance_inductor.N*converter.entrance_inductor.Core.Ae - (Vmin*Dmax/(2*frequency_upper_bound))),
+            Li_upper_bound_last
+        ]
+        Li_lower_bound = max(Li_lower_bounds)
+        Li_upper_bound = min(Li_upper_bounds)
+
+        if Li_lower_bound == Li_lower_bound_last and frequency_lower_bound == frequency_lower_bound_last:
+            done = True
+
+        Li_lower_bound_last = Li_lower_bound
+        Li_upper_bound_last = Li_upper_bound
+        frequency_lower_bound_last = frequency_lower_bound
+        frequency_upper_bound_last = frequency_upper_bound
+        bounds = ((frequency_lower_bound, frequency_upper_bound), (Li_lower_bound, Li_upper_bound), (1e10*0.5e-6, 1e12*0.5e-6))
+    
+    Lk_lower_bounds = [
+        converter.auxiliary_inductor.get_inductance(gap_width_bound[1]),
+        max(Lk_restriction_s1(converter, Vmin, Dmax, Li_upper_bound, frequency_upper_bound), Lk_restriction_s1(converter, Vmax, Dmin, Li_upper_bound, frequency_upper_bound)),
+        max(Lk_restriction_s2(converter, Vmin, Dmax, Li_upper_bound, frequency_upper_bound), Lk_restriction_s2(converter, Vmax, Dmin, Li_upper_bound, frequency_upper_bound))
+    ]
+    Lk_upper_bounds = [
+        converter.auxiliary_inductor.get_inductance(gap_width_bound[0])
+    ]
+    Lk_upper_bound = min(Lk_upper_bounds)
+    Lk_lower_bound = max(Lk_lower_bounds)
+
+    bounds = ((frequency_lower_bound, frequency_upper_bound), (Li_lower_bound, Li_upper_bound), (Lk_lower_bound, Lk_upper_bound))
+    return bounds
 
 def rescale(vector, bounds, function=None):
     xmax = max(vector)
@@ -321,3 +405,8 @@ def clamp(number, lower_bound, upper_bound=None):
     if number > upper_bound:
         return upper_bound
     return number
+
+def random_in_range(bound):
+    b = bound[1]
+    a = bound[0]
+    return (b - a) * np.random.random_sample() + a
