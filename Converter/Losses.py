@@ -10,29 +10,36 @@ def Transformer_Core_Loss(obj, X):
 
 
 # Atualizada
-def Transformer_Cable_Loss(obj, X):
+def Transformer_Primary_Cable_Loss(obj, X):
     fs = X[0]
     harmonics = obj.calculated_values['TransformerHarmonics']
     cable_loss_primary = 0
+
+    for n in range(0, len(harmonics)):
+        aux = 0.5
+        if n == 0:
+            aux = 1
+        cable_loss_primary += obj.transformer.Primary.get_rca(n)*(harmonics[n]**2)*aux
+    return cable_loss_primary
+
+def Transformer_Secondary_Cable_Loss(obj, X):
+    fs = X[0]
+    harmonics = obj.calculated_values['TransformerHarmonics']
     cable_loss_secondary = 0
 
     for n in range(0, len(harmonics)):
-        aux1 = 0.5
-        aux2 = aux1
+        aux = 0.5
         if n == 0:
-            aux1 = 1
-            aux2 = 0
-        cable_loss_primary += obj.transformer.Primary.get_rca(n)*(harmonics[n]**2)*aux1
-        cable_loss_secondary += obj.transformer.Secondary.get_rca(n)*((harmonics[n]/obj.transformer.Ratio)**2)*aux2
-    cable_loss_total = cable_loss_primary + cable_loss_secondary
-    return cable_loss_total
+            aux = 0
+        cable_loss_secondary += obj.transformer.Secondary.get_rca(n)*((harmonics[n]/obj.transformer.Ratio)**2)*aux
+    return cable_loss_secondary
 
 # Atualizada
 def EntranceInductor_Core_Loss(obj, X):
     fs = X[0]
     k2 = obj.entrance_inductor.Core.Ve * obj.entrance_inductor.Core.Kc
     dBLi = obj.calculated_values['dBLi']
-    k1 = dBLi ** obj.entrance_inductor.Core.Beta
+    k1 = (dBLi/2) ** obj.entrance_inductor.Core.Beta
     core_loss = 1e3*k1*k2*(fs ** obj.entrance_inductor.Core.Alpha)
     return core_loss
 
@@ -132,7 +139,7 @@ def Switch2_Loss(obj, X):
     return loss
 
 loss_function_map = {
-    'Transformer': {'Core': Transformer_Core_Loss, 'Cable': Transformer_Cable_Loss},
+    'Transformer': {'Core': Transformer_Core_Loss, 'Primary': Transformer_Primary_Cable_Loss, 'Secondary': Transformer_Secondary_Cable_Loss},
     'EntranceInductor': {'Core': EntranceInductor_Core_Loss, 'Cable': EntranceIndutor_Cable_Loss},
     'AuxiliaryInductor': {'Core': AuxiliaryInductor_Core_Loss, 'Cable': AuxiliaryInductor_Cable_Loss},
     'Capacitors': {'C1': Capacitor1_Loss, 'C2': Capacitor2_Loss, 'C3': Capacitor3_Loss, 'C4': Capacitor4_Loss},

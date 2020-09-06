@@ -1,6 +1,7 @@
 from Converter.auxiliary_functions import *
 from FileHandler import loadFSD
 from scipy.optimize import minimize
+import math
 
 Atr = [15.621321782051393, 0, -15.068631524735313, 0]
 Btr = [-69308774.01484102, -1512163.845349491, 69424447.47128429, 1627837.3017927664]
@@ -54,13 +55,15 @@ class Inductor:
         self.N = N
         self.Ncond = Ncond
 
-        self.Dstr = cable.Dcu/np.sqrt(Ncond)
-        self.FSD = FSD[Ncond - 1]
-        self.NC = np.ceil(self.FSD * self.Cable.D * N / self.Core.Bj)
-        self.Ncond = Ncond
-        self.Ada = np.sqrt(1/Ncond) * self.Cable.D * self.NC/self.Core.Bj
         self.Penetration_base = np.sqrt(self.Cable.Rho / (np.pi * self.Cable.Ur * uo))
-        self.A_base = np.power(np.pi/4, 0.75) * self.Dstr * np.sqrt(self.Ada) / self.Penetration_base
+
+        dsq = cable.Dcu *np.sqrt(np.pi/(4*Ncond))
+        self.FSD = FSD[Ncond - 1]
+        self.NC = np.ceil(self.FSD*self.Cable.D * N / self.Core.Bj)
+        ada = (N/self.NC)*dsq/self.Core.Bj
+        dn_base = self.Penetration_base/np.sqrt(ada)
+        self.A_base = dsq/dn_base
+
         self.rca = []
         self.rcc = self.Cable.Rho*(self.Core.Lt + 8*self.NC*self.Cable.D*self.FSD)*self.N/(self.Ncond*self.Cable.Scu)
 
@@ -99,8 +102,9 @@ def Transformer_Cable_Loss(Trafo):
             aux2 = 0
         cable_loss_primary += Trafo.Primary.get_rca(n)*(HarmonicsTrafo[n]**2)*aux1
         cable_loss_secondary += Trafo.Secondary.get_rca(n)*((HarmonicsTrafo[n]/Trafo.Ratio)**2)*aux2
-
-    return (cable_loss_primary - 0.718)**2 + (cable_loss_secondary - 0.82)**2
+    if math.isnan(cable_loss_primary):
+        cable_loss_primary = 10
+    return (cable_loss_primary - 0.718)**2
 
 def InductorCableLoss(Inductor):
     cable_loss = 0
@@ -109,6 +113,8 @@ def InductorCableLoss(Inductor):
         if n == 0:
             aux1 = 1
         cable_loss += Inductor.get_rca(n)*(HarmonicsTrafo[n]**2)*aux1
+    if math.isnan(cable_loss):
+        cable_loss = 10
     return (0.235  - cable_loss)**2
 
 N = [5, 59]
@@ -116,18 +122,36 @@ Ncond = [8, 1]
 rho = 1.68e-8
 AWG_23 = Cable(0.5753e-3, 0.5733e-3, rho, 0.999994)
 Cables = [AWG_23, AWG_23]
+NEE_20 = Core(0.08e-8, 0.312e-4, 0.26e-4, 1.34e-6, 7.9292e-3, 1.4017, 2.3294, 38e-3, 11.6e-3)
+NEE_30_15 = Core(1.037e-8, 1.22e-4, 0.85e-4, 8.17e-6, 7.9292e-3, 1.4017, 2.3294, 13e-2, 0.09)
+
 
 def objective(X):
-    NEE_30_15 = Core(1.037e-8, 1.22e-4, 0.85e-4, 8.17e-6, 7.9292e-3, 1.4017, 2.3294, X[0], X[1])
+    NEE_20.Lt = X[0]
+    NEE_30_15.Lt = X[1]
+    NEE_20.Bj = X[2]
+    NEE_30_15.Bj = X[3]
+    Lk = Inductor(NEE_20, AWG_23, 5, 8)
+    Lk.calculate_rca(50e3, 40)
     Trafo = Transformer(NEE_30_15, Cables, N, Ncond)
     Trafo.Primary.calculate_rca(50e3, 40)
     Trafo.Secondary.calculate_rca(50e3, 40)
-    return Transformer_Cable_Loss(Trafo)
+    return Transformer_Cable_Loss(Trafo)+InductorCableLoss(Lk)
 #
-x0 = [6.7e-2, 18.4e-3]
+x0 = [38e-3, 11.6e-3, 67e-3, 0.09]
 b = (0, 1)
-bound = ((1e-2, 10e-2), (10e-3, 20e-3))
+bound = ((1e-2, 10e-2), (1e-3, 10e-2),(1e-2, 10e-2), (1e-3, 10e-2))
 
+def contraint(X):
+    return [X[3] - X[1], X[2] - X[0]]
 
-sol = minimize(objective, x0, method='SLSQP', bounds = bound, tol= 1e-15, options={'maxiter': 1000, 'disp': True,})
+sol = minimize(
+    objective,
+    x0,
+    method='COBYLA',
+    bounds = bound,
+    tol= 1e-15,
+    options={'maxiter': 1000, 'disp': True,},
+    constraints = {'fun': contraint, 'type': 'ineq'}
+)
 print(sol)

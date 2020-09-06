@@ -52,16 +52,19 @@ class Inductor:
         self.N = N
         self.Ncond = Ncond
 
-        self.Dstr = cable.Dcu / np.sqrt(Ncond)
-        self.FSD = FSD[Ncond - 1]
-        self.NC = np.ceil(self.FSD * self.Cable.D * N / self.Core.Bj)
-        self.Ncond = Ncond
-        self.Ada = np.sqrt(1/Ncond) * self.Cable.D * self.NC / self.Core.Bj
         self.Penetration_base = np.sqrt(self.Cable.Rho / (np.pi * self.Cable.Ur * uo))
-        self.A_base = np.power(np.pi / 4, 0.75) * self.Dstr * np.sqrt(self.Ada) / self.Penetration_base
-        self.rca = None
+
+        dsq = cable.Dcu *np.sqrt(np.pi/Ncond)/2
+        self.FSD = FSD[Ncond - 1]
+        self.NC = np.ceil(self.FSD*self.Cable.D * N / self.Core.Bj)
+        ada = (N/self.NC)*dsq/self.Core.Bj
+        dn_base = self.Penetration_base/np.sqrt(ada)
+        self.A_base = dsq/dn_base
         self.rcc = self.Cable.Rho * (self.Core.Lt + 8 * self.NC * self.Cable.D * self.FSD) * self.N / (
                     self.Ncond * self.Cable.Scu)
+        
+        self.rca = None
+
         self.used_area = cable.S * N * Ncond
 
     def calculate_rca(self, fo, noc):
@@ -71,7 +74,7 @@ class Inductor:
                 ratio = 1
             else:
                 a = self.A_base * np.sqrt(n*fo)
-                ratio = a*(af.f1(a) + (2/3)*(self.Ncond*self.NC**2 - 1)*af.f2(a))
+                ratio = a*(af.f1(a) + (2/3)*((self.NC**2 - 1))*af.f2(a))
             self.rca[n] = ratio * self.rcc
 
     def get_rca(self, n):

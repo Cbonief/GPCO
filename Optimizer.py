@@ -263,22 +263,37 @@ class genetic_optimizer:
         # Nada
 
 
-def optimize_converter(converter, epochs=100, algorithm='BFGS', input_scale=None):
+def optimize_converter(converter, subroutine_iteration= 100, epochs=10, algorithm='SLSQP', input_scale=None):
     if input_scale is None:
         input_scale = [1, 1e8, 1e11]
 
-    # x0 = find_feasible_point(converter)
-    x0, bounds = find_feasible_point(converter, return_bounds=True)
-    print(x0)
-    sol = minimize(
-        converter.optimality,
-        x0,
-        method=algorithm,
-        tol = 1e-12,
-        options={'maxiter': epochs, 'disp': False, 'ftol': 1e-10}
-    )
-    print(sol.x)
-    return sol
+    best = 1000
+    result = None
+    bounds = determine_bounds(converter)
+    percentage = 0
+    percentage_last = -1
+    for i in range(0, epochs):
+        percentage = round(100*(i/epochs))
+        if percentage != percentage_last:
+            print(str(percentage) + "%")
+        x0 = find_feasible_point(converter, bounds)
+        solution = minimize(
+            converter.compensated_total_loss,
+            x0,
+            method=algorithm,
+            bounds = bounds,
+            tol = 1e-12,
+            options={'maxiter': subroutine_iteration, 'disp': False},
+            constraints={'fun': converter.total_constraint, 'type':'ineq'}
+        )
+        if solution.fun < best and solution.success:
+            best = solution.fun
+            result = solution
+    if result is None:
+        print('Falha na otimização')
+    else:
+        print('Otimização completa')
+    return result
 
 # lambda x: converter.total_constraint([a/b for a, b in zip(x, input_scale)])
 # lambda x: converter.compensated_total_loss([a/b for a, b in zip(x, input_scale)]),
@@ -299,7 +314,7 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100
             x0,
             method='SLSQP',
             tol = 1e-12,
-            options={'maxiter': 100, 'disp': True, 'ftol': 1e-10},
+            options={'maxiter': 100, 'disp': False, 'ftol': 1e-10},
             bounds=bounds,
         )
         feasible_point = sol.x

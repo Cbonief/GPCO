@@ -74,6 +74,29 @@ def AuxiliaryInductorVrms(obj, calculated_values):
     return rms_piecewise_linear(a, b, ti, tf, Ts)
 
 
+def TransformerPrimaryCurrentHarmonics(obj, calculated_values):
+    Ts = calculated_values['Ts']
+    Vc3 = calculated_values['Vc3']
+    Vc4 = calculated_values['Vc4']
+    t3 = calculated_values['t3']
+    t6 = calculated_values['t6']
+    Vc1 = calculated_values['Vc1']
+    Vc2 = calculated_values['Vc2']
+    Ipk_pos_1 = calculated_values['Ipk_pos_1']
+    Ipk_neg_1 = calculated_values['Ipk_neg_1']
+
+    D = calculated_values['D']
+    n = obj.transformer.Ratio
+    Lk = calculated_values['Lk']
+
+    A = [Ipk_pos_1, 0, Ipk_neg_1, 0]
+    B = [- (Vc2 + Vc3 / n) / Lk, (Vc4 / n - Vc2) / Lk, (Vc4 / n + Vc1) / Lk, (Vc1 - Vc3 / n) / Lk]
+    Tf = [t3, D * Ts, t6, Ts]
+    Ti = [0, t3, D*Ts, t6]
+
+    harmonics = fourier_piecewise_linear(A, B, Ti, Tf, 1/Ts, 40)
+    return harmonics
+
 def TransformerCurrentHarmonics(obj, calculated_values):
     Ts = calculated_values['Ts']
     Vc3 = calculated_values['Vc3']
@@ -94,10 +117,8 @@ def TransformerCurrentHarmonics(obj, calculated_values):
     Tf = [t3, D * Ts, t6, Ts]
     Ti = [0, t3, D*Ts, t6]
 
-
-    harmonics = fourier_piecewise_linear(A, B, Ti, Tf, 1/Ts, 40)
+    harmonics = fourier_piecewise_linear(A, B, Ti, Tf, 1/Ts, 100)
     return harmonics
-
 
 def LiIrms(obj, calculated_values):
     Ts = calculated_values['Ts']
