@@ -7,34 +7,32 @@ from scipy.optimize import minimize
 
 class genetic_optimizer:
 
-    def __init__(self, selected_components, circuit_features, safety_params):
+    def __init__(self, selected_components, design_features, safety_params):
         self.Switches = []
         self.Diodes = []
         self.Cores = selected_components['Cores']
         self.Cables = selected_components['Cables']
         self.Dissipators = None
         self.Capacitors = []
-        self.CircuitFeatures = circuit_features
-        self.SafetyParams = safety_params
+        self.design_features = design_features
+        self.safety_params = safety_params
         self.population = []
         self.population_size = None
 
         self.preselection(selected_components['Switches'], selected_components['Diodes'], selected_components['Capacitors'])
 
-    # Removes elements from the list that will not under any circuntances, be feasible in the given circuit.
+    # Removes elements from the list that will not under any circuntances, be feasible for the given design features.
     def preselection(self, switches, diodes, capacitors):
-
         # Preselection of capacitors.
         c = []
         for n in range(0, 4):
             c.append([])
-
         for capacitor in capacitors:
-            if capacitor.Vmax > self.SafetyParams['Vc']*max(self.CircuitFeatures['Vi']['Min']*self.CircuitFeatures['D']['Max']/(1-self.CircuitFeatures['D']['Max']), self.CircuitFeatures['Vi']['Max']*self.CircuitFeatures['D']['Min']/(1-self.CircuitFeatures['D']['Min'])):
+            if capacitor.Vmax > self.safety_params['Vc']*max(self.design_features['Vi']['Min']*self.design_features['D']['Max']/(1-self.design_features['D']['Max']), self.design_features['Vi']['Max']*self.design_features['D']['Min']/(1-self.design_features['D']['Min'])):
                 c[0].append(capacitor)
-            if capacitor.Vmax > self.SafetyParams['Vc']*self.CircuitFeatures['Vi']['Max']:
+            if capacitor.Vmax > self.safety_params['Vc']*self.design_features['Vi']['Max']:
                 c[1].append(capacitor)
-            if capacitor.Vmax > self.SafetyParams['Vc']*self.CircuitFeatures['Vo']/4:
+            if capacitor.Vmax > self.safety_params['Vc']*self.design_features['Vo']/4:
                 c[2].append(capacitor)
                 c[3].append(capacitor)
         self.Capacitors = c
@@ -44,21 +42,21 @@ class genetic_optimizer:
         for n in range(0, 2):
             d.append([])
         for diode in diodes:
-            if diode.Vmax > self.SafetyParams['Vd']*self.CircuitFeatures['Vo']:
+            if diode.Vmax > self.safety_params['Vd']*self.design_features['Vo']:
                 d[0].append(diode)
                 d[1].append(diode)
         self.Diodes = d
-        #
-        # # Preselection of switches.
-        # s = []
-        # for n in range(0, 2):
-        #     s.append([])
-        # for switch in switches:
-        #     if switch.Vmax > self.SafetyParams['Vs'] * self.CircuitFeatures['Vi']['Max']/(1-self.CircuitFeatures['D']['Min']):
-        #         s[0].append(capacitor)
-        #         s[1].append(capacitor)
-        # for n in range(0, 2):
-        #     self.Switches.append(s[n])
+
+        # Preselection of switches.
+        s = []
+        for n in range(0, 2):
+            s.append([])
+        for switch in switches:
+            # if switch.Vmax > self.safety_params['Vs'] * max(self.design_features['Vi']['Max']/(1-self.design_features['D']['Min']), self.design_features['Vi']['Min']/(1-self.design_features['D']['Max'])):
+            if True:
+                s[0].append(switch)
+                s[1].append(switch)
+        self.Switches = s
 
     def generate_circuit(self):
         # Chooses the switches, capacitors and diodes for the circuit.
@@ -82,12 +80,13 @@ class genetic_optimizer:
             n = [0, 0]
             while not found:
                 n = [np.random.randint(1, 200), np.random.randint(1, 200)]
-                a = self.CircuitFeatures['Vi']['Nominal'] >= self.CircuitFeatures['Vo']
+                a = self.design_features['Vi']['Nominal'] >= self.design_features['Vo']
                 b = n[0] >= n[1]
-                found = (a and b) or (not a and not b)
-            ncond = [np.random.randint(1, 50), np.random.randint(1, 50)]
+                c = (n[1]/float(n[0])) > self.design_features['Vo']*0.7/self.design_features['Vi']['Max']
+                found = ((a and b) or (not a and not b)) and c
+            ncond = [np.random.randint(1, 100), np.random.randint(1, 100)]
             transformer = Transformer(core, cables, n, ncond)
-            feasible = transformer.is_feasible(self.SafetyParams['ku']['Transformer'])
+            feasible = transformer.is_feasible(self.safety_params['ku']['Transformer'])
 
         # Builds a feasible entrance inductor.
         feasible = False
@@ -98,7 +97,7 @@ class genetic_optimizer:
             n = np.random.randint(1, 200)
             ncond = np.random.randint(1, 50)
             entrance_inductor = Inductor(core, cable, n, ncond)
-            feasible = entrance_inductor.is_feasible(self.SafetyParams['ku']['EntranceInductor'])
+            feasible = entrance_inductor.is_feasible(self.safety_params['ku']['EntranceInductor'])
 
         # Builds a feasible auxiliary inductor.
         feasible = False
@@ -109,24 +108,35 @@ class genetic_optimizer:
             n = np.random.randint(1, 200)
             ncond = np.random.randint(1, 50)
             auxiliary_inductor = Inductor(core, cable, n, ncond)
-            feasible = auxiliary_inductor.is_feasible(self.SafetyParams['ku']['AuxiliaryInductor'])
+            feasible = auxiliary_inductor.is_feasible(self.safety_params['ku']['AuxiliaryInductor'])
 
 
         # dissipators = [np.random.choice(self.Dissipators), np.random.choice(self.Dissipators)]
-        new_circuit = BoostHalfBridgeInverter(transformer, entrance_inductor, auxiliary_inductor, self.CircuitFeatures, switches, diodes, capacitors)
+        new_circuit = BoostHalfBridgeInverter(
+            transformer,
+            entrance_inductor,
+            auxiliary_inductor,
+            self.design_features,
+            switches,
+            diodes,
+            capacitors,
+            self.safety_params
+        )
+        # new_circuit.summarize()
         return new_circuit
 
     # Ok
     def optimize(self, population_size=50, epochs=50, starting_mutation_rate=0.5, mutation_decay_rate = 0.01, minimal_mutation_rate=0.1, crossover_rate=0.5, elitist_rate=0.1, kill_rate=0.1, solution_size=2):
         self.population = []
+        self.population_size = population_size
         self.population = self.create_population(population_size)
-        best_loss = self.CircuitFeatures['Po']*np.zeros(solution_size)
-        solution = np.random.choice[self.population, solution_size]
+        best_loss = self.design_features['Po']*np.zeros(solution_size)
+        solution = np.random.choice(self.population, solution_size)
 
         mutation_rate = starting_mutation_rate
 
         for epoch in range(0, epochs):
-            [losses, feasible] = self.test_population(population_size)                      # Ok
+            [losses, feasible] = self.test_population()                      # Ok
             [sorted_indexes, best_loss, solution] = self.sort_population_idexes(
                 population_size, solution_size, losses, feasible, best_loss, solution)      # Ok
             elite_indexes = sorted_indexes[0:round(self.population_size * elitist_rate)]
@@ -140,7 +150,6 @@ class genetic_optimizer:
 
     # Ok
     def create_population(self, population_size):
-        self.population_size = population_size
         population = []
         for index in range(0, self.population_size):
             population.append(self.generate_circuit())
@@ -249,12 +258,12 @@ class genetic_optimizer:
             parent2_gene = self.population[parent2].get_parameter(gene_type)
             offspring.set_parameter(gene_type, parent2_gene)
 
-        if not offspring.Transformer.is_feasible(self.SafetyParams['ku']['Transformer']):
-            offspring.Transformer.recalculate_winding(self.SafetyParams['ku']['Transformer'], self.CircuitFeatures)
-        if not offspring.EntranceInductor.is_feasible(self.SafetyParams['ku']['EntranceInductor']):
-            offspring.EntranceInductor.recalculate_winding(self.SafetyParams['ku']['EntranceInductor'])
-        if not offspring.AuxiliaryInductor.is_feasible(self.SafetyParams['ku']['AuxiliaryInductor']):
-            offspring.AuxiliaryInductor.recalculate_winding(self.SafetyParams['ku']['AuxiliaryInductor'])
+        if not offspring.Transformer.is_feasible(self.safety_params['ku']['Transformer']):
+            offspring.Transformer.recalculate_winding(self.safety_params['ku']['Transformer'], self.design_features)
+        if not offspring.EntranceInductor.is_feasible(self.safety_params['ku']['EntranceInductor']):
+            offspring.EntranceInductor.recalculate_winding(self.safety_params['ku']['EntranceInductor'])
+        if not offspring.AuxiliaryInductor.is_feasible(self.safety_params['ku']['AuxiliaryInductor']):
+            offspring.AuxiliaryInductor.recalculate_winding(self.safety_params['ku']['AuxiliaryInductor'])
 
         return offspring
 
@@ -399,6 +408,7 @@ def determine_bounds(converter):
     Lk_lower_bound = max(Lk_lower_bounds)
 
     bounds = ((frequency_lower_bound, frequency_upper_bound), (Li_lower_bound, Li_upper_bound), (Lk_lower_bound, Lk_upper_bound))
+    print(bounds)
     return bounds
 
 def rescale(vector, bounds, function=None):

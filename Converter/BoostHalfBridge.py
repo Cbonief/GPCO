@@ -261,6 +261,36 @@ class BoostHalfBridgeInverter:
         calculated_values['BmaxLk'] = LkVrms/(self.auxiliary_inductor.Core.Ae*fs*7*self.auxiliary_inductor.N)
         self.calculated_values = calculated_values
 
+    def summarize(self):
+        print("\n")
+        print("Resumo do Conversor\n")
+        print("Transformador")
+        print("- Espiras [{},{}]".format(self.transformer.Primary.N, self.transformer.Secondary.N))
+        print("- Condutores [{},{}]".format(self.transformer.Primary.Ncond, self.transformer.Secondary.Ncond))
+        print("- Cabo [{},{}]".format(self.transformer.Primary.Cable.Name, self.transformer.Secondary.Cable.Name))
+        print("- Núcleo {}".format(self.transformer.Core.Name))
+        print("Indutor de Entrada")
+        print("- Espiras {}".format(self.entrance_inductor.N))
+        print("- Condutores {}".format(self.entrance_inductor.Ncond))
+        print("- Cabo {}".format(self.entrance_inductor.Cable.Name))
+        print("- Núcleo {}".format(self.entrance_inductor.Core.Name))
+        print("Indutor Auxiliar")
+        print("- Espiras {}".format(self.auxiliary_inductor.N))
+        print("- Condutores {}".format(self.auxiliary_inductor.Ncond))
+        print("- Cabo {}".format(self.auxiliary_inductor.Cable.Name))
+        print("- Núcleo {}".format(self.auxiliary_inductor.Core.Name))
+        print("Chaves")
+        print("-S1 - {}".format(self.switches[0].Name))
+        print("-S2 - {}".format(self.switches[1].Name))
+        print("Capacitores")
+        print("-C1 - {}".format(self.capacitors[0].Name))
+        print("-C2 - {}".format(self.capacitors[1].Name))
+        print("-C3 - {}".format(self.capacitors[2].Name))
+        print("-C4 - {}".format(self.capacitors[3].Name))
+        print("Diodos")
+        print("-D3 - {}".format(self.diodes[0].Name))
+        print("-D4 - {}".format(self.diodes[1].Name))
+
     def get_parameter(self, name):
         if name == 'primary_cable':
             return self.transformer.Primary.Cable                       # ok

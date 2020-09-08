@@ -81,7 +81,7 @@ AuxiliaryInductorRestrictions = [bmax_Lk, AeAw_Lk, JLk, ZVS_restriction]
 
 Restrictions = []
 Restrictions.extend(EntranceInductorRestrictions)
-Restrictions.extend(AuxiliaryInductorRestrictions)
+# Restrictions.extend(AuxiliaryInductorRestrictions)
 
 
 def Lk_restriction_s1(converter, Vi, D, L, fs):

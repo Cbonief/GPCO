@@ -21,9 +21,19 @@ try:
 except FileNotFoundError:
     print('Didn´t find FSD')
 
+class Component:
+    def __init__(self, Name):
+        self.Name = Name
 
-class Cable:
-    def __init__(self, Dcu, D, rho, Ur):
+    def set_name(self, new_name):
+        self.Name = new_name
+
+    def get_name(self):
+        return self.Name
+
+class Cable(Component):
+    def __init__(self, Dcu, D, rho, Ur, Name=None):
+        Component.__init__(self, Name)
         self.Scu = np.pi*(Dcu**2)/4
         self.Dcu = Dcu
         self.S = np.pi*(D**2)/4
@@ -32,8 +42,9 @@ class Cable:
         self.Ur = Ur
 
 
-class Core:
-    def __init__(self, AeAw, Ae, Aw, Ve, Kc, alpha, beta, lt, Bj):
+class Core(Component):
+    def __init__(self, AeAw, Ae, Aw, Ve, Kc, alpha, beta, lt, Bj, Name=None):
+        Component.__init__(self, Name)
         self.AeAw = AeAw
         self.Ae = Ae
         self.Aw = Aw
@@ -45,8 +56,9 @@ class Core:
         self.Bj = Bj
 
 
-class Inductor:
-    def __init__(self, core, cable, N, Ncond):
+class Inductor(Component):
+    def __init__(self, core, cable, N, Ncond, Name=None):
+        Component.__init__(self, Name)
         self.Core = core
         self.Cable = cable
         self.N = N
@@ -113,8 +125,9 @@ class Inductor:
                     self.set_parameter(name, self.Core.Aw*ku/(self.N*self.Cable.S))
 
 
-class Transformer:
-    def __init__(self, core, cables, N, Ncond):
+class Transformer(Component):
+    def __init__(self, core, cables, N, Ncond, Name=None):
+        Component.__init__(self, Name)
         self.Core = core
         self.Primary = Inductor(core, cables[0], N[0], Ncond[0])
         self.Secondary = Inductor(core, cables[1], N[1], Ncond[1])
@@ -140,17 +153,17 @@ class Transformer:
             if resolved:
                 self.set_parameter('Np', n[0])
                 self.set_parameter('Ns', n[1])
-                self.set_parameter('Npp', ncond[0])
-                self.set_parameter('Nps', ncond[1])
+                self.set_parameter('Ncondp', ncond[0])
+                self.set_parameter('Nconds', ncond[1])
 
     def set_parameter(self, name, value, ku=None):
         if name == 'Np':
             self.Primary.set_parameter('N', value)
         elif name == 'Ns':
             self.Secondary.set_parameter('Ncond', value)
-        elif name == 'Npp':
+        elif name == 'Ncondp':
             self.Primary.set_parameter('N', value)
-        elif name == 'Nps':
+        elif name == 'Nconds':
             self.Secondary.set_parameter('Ncond', value)
 
         self.used_area = self.Primary.used_area + self.Secondary.used_area
@@ -160,29 +173,33 @@ class Transformer:
                     self.set_parameter(name, (self.Core.Aw*ku - self.Secondary.used_area)/(self.Primary.Ncond*self.Primary.Cable.S))
                 elif name == 'Ns':
                     self.set_parameter(name, (self.Core.Aw*ku - self.Primary.used_area)/(self.Secondary.Ncond*self.Secondary.Cable.S))
-                elif name == 'Npp':
+                elif name == 'Ncondp':
                     self.set_parameter(name, (self.Core.Aw*ku - self.Secondary.used_area)/(self.Primary.N*self.Primary.Cable.S))
-                elif name == 'Nps':
+                elif name == 'Nconds':
                     self.set_parameter(name, (self.Core.Aw * ku - self.Primary.used_area) / (self.Secondary.N * self.Secondary.Cable.S))
 
 
-class Switch:
-    def __init__(self, ton, toff, Rdson, Cds=0):
+class Switch(Component):
+    def __init__(self, ton, toff, Rdson, Vmax, Cds=0, Name=None):
+        Component.__init__(self, Name)
         self.Ton = ton
         self.Toff = toff
         self.Rdson = Rdson
+        self.Vmax = Vmax
         self.Cds = Cds
 
 
-class Diode:
-    def __init__(self, vd, rt, Vmax):
+class Diode(Component):
+    def __init__(self, vd, rt, Vmax, Name=None):
+        Component.__init__(self, Name)
         self.Vd = vd
         self.Rt = rt
         self.Vmax = Vmax
 
 
-class Capacitor:
-    def __init__(self, C, Rse, Vmax):
+class Capacitor(Component):
+    def __init__(self, C, Rse, Vmax, Name=None):
+        Component.__init__(self, Name)
         self.C = C
         self.RSE = Rse
         self.Vmax = Vmax
