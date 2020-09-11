@@ -14,6 +14,10 @@ class BoostHalfBridgeInverter:
             'Min': 1-(self.design_features['Vi']['Max']*transformer.Ratio/self.design_features['Vo'])
         }
 
+        Dmax = 1-(self.design_features['Vi']['Min']*transformer.Ratio/self.design_features['Vo'])
+        Dmin = 1-(self.design_features['Vi']['Max']*transformer.Ratio/self.design_features['Vo'])
+
+
         self.safety_params = safety_params
 
         self.loss_functions = Losses.loss_function_map
@@ -80,8 +84,8 @@ class BoostHalfBridgeInverter:
                 efficiency = self.design_features['Po'] / (self.design_features['Po'] + total_loss)
                 error = abs(loss_last - total_loss)
             if not get_all:
-                if math.isnan(loss) or math.isinf(loss):
-                    total_loss = 50
+                # if math.isnan(loss) or math.isinf(loss):
+                #     total_loss = 50
                 self.last_calculated_loss = total_loss
                 self.last_calculated_efficiency = efficiency
                 self.last_calculated_operating_point = X
@@ -143,7 +147,10 @@ class BoostHalfBridgeInverter:
             
         for restriction in self.restriction_functions:
             func = restriction['function']
-            constraints.append(func(self, [X[0], X[1], X[2]]))
+            res = func(self, [X[0], X[1], X[2]])
+            if math.isnan(res) or math.isinf(res):
+                res = -10
+            constraints.append(res)
         return constraints
 
     def total_violation(self, X):
@@ -179,6 +186,7 @@ class BoostHalfBridgeInverter:
 
         Vc3, Vc4, D = Functions.vc3_vc4_d(self, fs, Lk)
         Vo = Vc3 + Vc4
+        Functions.vo(self, fs, Lk, D)
 
         calculated_values = {
             'Ts': Ts,
@@ -187,6 +195,7 @@ class BoostHalfBridgeInverter:
             'Vo': Vo,
             'D': D
         }
+
 
         T = Functions.t3t6(self, calculated_values)
         t3 = T[0]
