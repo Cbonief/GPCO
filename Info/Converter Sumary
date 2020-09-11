@@ -1,0 +1,59 @@
+Lista de Parâmetros de Projeto
+    'Vo' 400
+    'D': {'Max', 'Min'}
+    'Vi': {'Nominal', 'Max', 'Min'}
+    'Ro'
+    'Po'
+    'Bmax': {'Transformer', 'EntranceInductor', 'AuxiliaryInductor'}
+    'dIin_max'
+    'dVo_max'
+    'dVc1'
+    'dVc2'
+    'Jmax'
+
+# Os parâmetros D['Max'] e D['Min'] servem para determinar apenas para restringir a razão cíclica na otimização.
+# Dentros dos cálculos, os parâmetros reais são estimados, para serem utilizados na criação dos limites das variáveis e das restrições.
+# Isso ocorre porque devido à presença de Lk, a tensão de saída depende da frequência, e não apenas da razão cíclica.
+# Dessa forma, para cada frequência que o otimizador numérico testa, D['Max'] e D['Min'] são recalculados.
+
+
+Lista de Parâmetros de Segurança
+	'Vc'
+	'Vd'
+	'Id'
+	'Vs'
+	'Is'
+	'Ic'
+	'ku': {'Transformer', 'EntranceInductor', 'AuxiliaryInductor'}
+
+
+Lista de Variáveis (27 no Total: 3 Contínuas e 24 Discretas)
+	
+	Contínuas
+	- fs
+	- Li (valor da indutância)
+	- Lk (valor da indutância)
+
+	Discretas
+	- C1, C2, C3, C4.
+	- S1 e S2.
+	- D3 e D4.
+		Transformador
+		- Núcleo
+		- Np e Ns.
+		- NcondP e NcondS.
+		- Cabo do Primário e do Secundário.
+		Li
+		- Núcleo.
+		- N
+		- Ncond
+		- Cabo
+		Lk
+		- Núcleo
+		- N
+		- Ncond
+		- Cabo
+
+
+Lista de Restrições
+		
