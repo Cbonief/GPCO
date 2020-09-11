@@ -59,71 +59,77 @@ class genetic_optimizer:
         self.Switches = s
 
     def generate_circuit(self):
-        # Chooses the switches, capacitors and diodes for the circuit.
-        switches = []
-        for n in range(0, 2):
-            switches.append(np.random.choice(self.Switches[n]))
-        capacitors = []
-        for n in range(0, 4):
-            capacitors.append(np.random.choice(self.Capacitors[n]))
-        diodes = []
-        for n in range(0, 2):
-            diodes.append(np.random.choice(self.Diodes[n]))
+        print("Generated")
 
-        # Builds a feasible transformer.
-        feasible = False
-        transformer = None
-        while not feasible:
-            core = np.random.choice(self.Cores)
-            cables = [np.random.choice(self.Cables), np.random.choice(self.Cables)]
-            found = False
-            n = [0, 0]
-            while not found:
-                n = [np.random.randint(1, 200), np.random.randint(1, 200)]
-                a = self.design_features['Vi']['Nominal'] >= self.design_features['Vo']
-                b = n[0] >= n[1]
-                c = (n[1]/float(n[0])) > self.design_features['Vo']*0.7/self.design_features['Vi']['Max']
-                found = ((a and b) or (not a and not b)) and c
-            ncond = [np.random.randint(1, 100), np.random.randint(1, 100)]
-            transformer = Transformer(core, cables, n, ncond)
-            feasible = transformer.is_feasible(self.safety_params['ku']['Transformer'])
+        bounds_feasible = False
+        while not bounds_feasible:
+            # Chooses the switches, capacitors and diodes for the circuit.
+            switches = []
+            for n in range(0, 2):
+                switches.append(np.random.choice(self.Switches[n]))
+            capacitors = []
+            for n in range(0, 4):
+                capacitors.append(np.random.choice(self.Capacitors[n]))
+            diodes = []
+            for n in range(0, 2):
+                diodes.append(np.random.choice(self.Diodes[n]))
 
-        # Builds a feasible entrance inductor.
-        feasible = False
-        entrance_inductor = None
-        while not feasible:
-            core = np.random.choice(self.Cores)
-            cable = np.random.choice(self.Cables)
-            n = np.random.randint(1, 200)
-            ncond = np.random.randint(1, 50)
-            entrance_inductor = Inductor(core, cable, n, ncond)
-            feasible = entrance_inductor.is_feasible(self.safety_params['ku']['EntranceInductor'])
+            # Builds a feasible transformer.
+            feasible = False
+            transformer = None
+            while not feasible:
+                core = np.random.choice(self.Cores)
+                cables = [np.random.choice(self.Cables), np.random.choice(self.Cables)]
+                found = False
+                n = [0, 0]
+                while not found:
+                    n = [np.random.randint(1, 200), np.random.randint(1, 200)]
+                    a = self.design_features['Vi']['Nominal'] >= self.design_features['Vo']
+                    b = n[0] >= n[1]
+                    c = self.design_features['Vo']*0.3/self.design_features['Vi']['Min'] < (n[1]/float(n[0])) < self.design_features['Vo']*0.7/self.design_features['Vi']['Max']
+                    found = ((a and b) or (not a and not b)) and c
+                ncond = [np.random.randint(1, 100), np.random.randint(1, 100)]
+                transformer = Transformer(core, cables, n, ncond)
+                feasible = transformer.is_feasible(self.safety_params['ku']['Transformer'])
 
-        # Builds a feasible auxiliary inductor.
-        feasible = False
-        auxiliary_inductor = None
-        while not feasible:
-            core = np.random.choice(self.Cores)
-            cable = np.random.choice(self.Cables)
-            n = np.random.randint(1, 200)
-            ncond = np.random.randint(1, 50)
-            auxiliary_inductor = Inductor(core, cable, n, ncond)
-            feasible = auxiliary_inductor.is_feasible(self.safety_params['ku']['AuxiliaryInductor'])
+            # Builds a feasible entrance inductor.
+            feasible = False
+            entrance_inductor = None
+            while not feasible:
+                core = np.random.choice(self.Cores)
+                cable = np.random.choice(self.Cables)
+                n = np.random.randint(1, 200)
+                ncond = np.random.randint(1, 50)
+                entrance_inductor = Inductor(core, cable, n, ncond)
+                feasible = entrance_inductor.is_feasible(self.safety_params['ku']['EntranceInductor'])
+
+            # Builds a feasible auxiliary inductor.
+            feasible = False
+            auxiliary_inductor = None
+            while not feasible:
+                core = np.random.choice(self.Cores)
+                cable = np.random.choice(self.Cables)
+                n = np.random.randint(1, 200)
+                ncond = np.random.randint(1, 50)
+                auxiliary_inductor = Inductor(core, cable, n, ncond)
+                feasible = auxiliary_inductor.is_feasible(self.safety_params['ku']['AuxiliaryInductor'])
 
 
-        # dissipators = [np.random.choice(self.Dissipators), np.random.choice(self.Dissipators)]
-        new_circuit = BoostHalfBridgeInverter(
-            transformer,
-            entrance_inductor,
-            auxiliary_inductor,
-            self.design_features,
-            switches,
-            diodes,
-            capacitors,
-            self.safety_params
-        )
-        # new_circuit.summarize()
-        return new_circuit
+            # dissipators = [np.random.choice(self.Dissipators), np.random.choice(self.Dissipators)]
+            new_converter = BoostHalfBridgeInverter(
+                transformer,
+                entrance_inductor,
+                auxiliary_inductor,
+                self.design_features,
+                switches,
+                diodes,
+                capacitors,
+                self.safety_params
+            )
+
+            [_, bounds_feasible] = determine_bounds(new_converter)
+            # new_circuit.summarize()
+        return new_converter
 
     # Ok
     def optimize(self, population_size=50, epochs=50, starting_mutation_rate=0.5, mutation_decay_rate = 0.01, minimal_mutation_rate=0.1, crossover_rate=0.5, elitist_rate=0.1, kill_rate=0.1, solution_size=2):
@@ -137,8 +143,7 @@ class genetic_optimizer:
 
         for epoch in range(0, epochs):
             [losses, feasible] = self.test_population()                      # Ok
-            [sorted_indexes, best_loss, solution] = self.sort_population_idexes(
-                population_size, solution_size, losses, feasible, best_loss, solution)      # Ok
+            [sorted_indexes, best_loss, solution] = self.sort_population_indexes(solution_size, losses, feasible, best_loss, solution)      # Ok
             elite_indexes = sorted_indexes[0:round(self.population_size * elitist_rate)]
             self.kill_population(elite_indexes, kill_rate, feasible)                        # Ok
             self.cross_population(losses, crossover_rate, elite_indexes)                    # Ok
@@ -151,6 +156,7 @@ class genetic_optimizer:
     # Ok
     def create_population(self, population_size):
         population = []
+        print('Creating population')
         for index in range(0, self.population_size):
             population.append(self.generate_circuit())
         return population
@@ -162,10 +168,11 @@ class genetic_optimizer:
         losses = np.zeros(self.population_size)
         for index in range(0, self.population_size):
             circuit = self.population[index]
-            loss = circuit.optimize()
-            if circuit.solution_is_feasible():
-                feasible[index] = True
+            print("Testing individual {}".format(index))
+            loss, success = optimize_converter(circuit)
+            feasible[index] = success
             losses[index] = loss
+            print("Losses = {} | Feasible = {}".format(loss, success))
         return [losses, feasible]
 
     # Sorts the population indexes from best to worst. So population[indexes[0]] is the best circuit. It also finds if
@@ -185,12 +192,13 @@ class genetic_optimizer:
                     sorted_indexes[index] = sorting_index
 
         # Verifies if a member of the current population is better then one in the Solution vector.
-        arr = best_loss
+        arr = np.zeros(2*solution_size)
+        arr[0:solution_size] = best_loss
         pop_arr = solution
         size = solution_size
         for index in range(0, solution_size):
-            arr.append(losses[sorted_indexes[index]])
             if feasible[sorted_indexes[index]]:
+                arr[solution+index] = losses[sorted_indexes[index]]
                 pop_arr.append(self.population[sorted_indexes[index]])
                 size += 1
 
@@ -272,37 +280,35 @@ class genetic_optimizer:
         # Nada
 
 
-def optimize_converter(converter, subroutine_iteration= 100, epochs=10, algorithm='SLSQP', input_scale=None):
-    if input_scale is None:
-        input_scale = [1, 1e8, 1e11]
+def optimize_converter(converter, subroutine_iteration= 100, epochs=10, algorithm='SLSQP'):
+    [bounds, feasible] = determine_bounds(converter)
 
-    best = 1000
-    result = None
-    bounds = determine_bounds(converter)
-    percentage = 0
-    percentage_last = -1
-    for i in range(0, epochs):
-        percentage = round(100*(i/epochs))
-        if percentage != percentage_last:
-            print(str(percentage) + "%")
-        x0 = find_feasible_point(converter, bounds)
-        solution = minimize(
-            converter.compensated_total_loss,
-            x0,
-            method=algorithm,
-            bounds = bounds,
-            tol = 1e-12,
-            options={'maxiter': subroutine_iteration, 'disp': False},
-            constraints={'fun': converter.total_constraint, 'type':'ineq'}
-        )
-        if solution.fun < best and solution.success:
-            best = solution.fun
-            result = solution
-    if result is None:
-        print('Falha na otimização')
+    if feasible:
+        best = 1000
+        result = None
+        for i in range(0, epochs):
+            x0 = find_feasible_point(converter, bounds)
+            solution = minimize(
+                converter.compensated_total_loss,
+                x0,
+                method=algorithm,
+                bounds = bounds,
+                tol = 1e-12,
+                options={'maxiter': subroutine_iteration, 'disp': False},
+                constraints={'fun': converter.total_constraint, 'type':'ineq'}
+            )
+            print("Loss = {}".format(solution.fun))
+            if solution.fun < best and solution.success:
+                best = solution.fun
+                result = solution
+                print("Solution beaten")
+        if result:
+            return [best, result.success]
+        else:
+            return [1000, False]
     else:
-        print('Otimização completa')
-    return result
+        return [1000, feasible]
+    
 
 # lambda x: converter.total_constraint([a/b for a, b in zip(x, input_scale)])
 # lambda x: converter.compensated_total_loss([a/b for a, b in zip(x, input_scale)]),
@@ -323,7 +329,7 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100
             x0,
             method='SLSQP',
             tol = 1e-12,
-            options={'maxiter': 100, 'disp': False, 'ftol': 1e-10},
+            options={'maxiter': maxiter, 'disp': False, 'ftol': 1e-10},
             bounds=bounds,
         )
         feasible_point = sol.x
@@ -332,7 +338,7 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100
         for constraint in constraints:
             if constraint <= 0:
                 found_point = False
-
+    print("Found a feasible point")
     if return_bounds:
         return [feasible_point, bounds]
     else:
@@ -347,6 +353,7 @@ def determine_bounds(converter):
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
     Ro = converter.design_features['Ro']
+    n = converter.transformer.Ratio
 
     gap_width_bound = [1e-4, 3e-2]
 
@@ -354,6 +361,10 @@ def determine_bounds(converter):
     Li_lower_bound_last = converter.entrance_inductor.get_inductance(gap_width_bound[1])
     frequency_upper_bound_last = 1e6
     frequency_lower_bound_last = 100
+    Lk_upper_bound_last = converter.auxiliary_inductor.get_inductance(gap_width_bound[0])
+    Lk_lower_bound_last = converter.auxiliary_inductor.get_inductance(gap_width_bound[1])
+
+    GR = Gain_Restriction_Term(converter)
 
     done = False
     while not done:
@@ -361,6 +372,9 @@ def determine_bounds(converter):
         frequency_upper_bounds = [
             (2*converter.entrance_inductor.Penetration_base/converter.entrance_inductor.Cable.Dcu)**2,
             (2*converter.auxiliary_inductor.Penetration_base/converter.auxiliary_inductor.Cable.Dcu)**2,
+            (2*converter.transformer.Primary.Penetration_base/converter.transformer.Primary.Cable.Dcu)**2,
+            (2*converter.transformer.Secondary.Penetration_base/converter.transformer.Secondary.Cable.Dcu)**2,
+            GR/Lk_lower_bound_last,
             frequency_upper_bound_last
         ]
         frequency_lower_bounds = [
@@ -368,7 +382,7 @@ def determine_bounds(converter):
             max((1-Dmax)/Vmin**2, (1-Dmin)/Vmax**2)*Po/(converter.capacitors[1].C*converter.design_features['dVc2']),
             Dmax*Po/(converter.capacitors[2].C*converter.design_features['dVo_max']*Vo**2),
             (1-Dmin)*Po/(converter.capacitors[3].C*converter.design_features['dVo_max']*Vo**2),
-            max(Vmin**2*Dmax, Vmax**2*Dmin)/(Po*converter.design_features['dIin_max']*Li_upper_bound_last),
+            0.5*max(Vmin**2*Dmax, Vmax**2*Dmin)/(Po*converter.design_features['dIin_max']*Li_upper_bound_last),
             frequency_lower_bound_last
         ]
         frequency_lower_bound = max(frequency_lower_bounds)
@@ -376,7 +390,7 @@ def determine_bounds(converter):
 
         # Entrance inductance bounds.
         Li_lower_bounds = [
-            max(Vmin**2*Dmax, Vmax**2*Dmin)/(Po*converter.design_features['dIin_max']*frequency_upper_bound),
+            0.5*max(Vmin**2*Dmax, Vmax**2*Dmin)/(Po*converter.design_features['dIin_max']*frequency_upper_bound),
             Li_lower_bound_last
         ]
         Li_upper_bounds = [
@@ -387,29 +401,41 @@ def determine_bounds(converter):
         Li_lower_bound = max(Li_lower_bounds)
         Li_upper_bound = min(Li_upper_bounds)
 
-        if Li_lower_bound == Li_lower_bound_last and frequency_lower_bound == frequency_lower_bound_last:
-            done = True
+        Lk_lower_bounds = [
+            max(Lk_restriction_s1(converter, Vmin, Dmax, Li_upper_bound, frequency_upper_bound), Lk_restriction_s1(converter, Vmax, Dmin, Li_upper_bound, frequency_upper_bound)),
+            max(Lk_restriction_s2(converter, Vmin, Dmax, Li_upper_bound, frequency_upper_bound), Lk_restriction_s2(converter, Vmax, Dmin, Li_upper_bound, frequency_upper_bound)),
+            Lk_lower_bound_last
+        ]
+        Lk_upper_bounds = [
+            GR/frequency_lower_bound,
+            Lk_upper_bound_last
+        ]
+        Lk_upper_bound = min(Lk_upper_bounds)
+        Lk_lower_bound = max(Lk_lower_bounds)
+
+        fl = frequency_lower_bound == frequency_lower_bound_last
+        fu = frequency_upper_bound == frequency_upper_bound_last
+        Lil = Li_lower_bound == Li_lower_bound_last
+        Liu = Li_upper_bound == Li_upper_bound_last
+        Lkl = Lk_lower_bound == Lk_lower_bound_last
+        Lku = Lk_upper_bound == Lk_upper_bound_last
+
+        done = fl and fu and Lil and Liu and Lkl and Lku
 
         Li_lower_bound_last = Li_lower_bound
         Li_upper_bound_last = Li_upper_bound
         frequency_lower_bound_last = frequency_lower_bound
         frequency_upper_bound_last = frequency_upper_bound
-        bounds = ((frequency_lower_bound, frequency_upper_bound), (Li_lower_bound, Li_upper_bound), (1e10*0.5e-6, 1e12*0.5e-6))
+        Lk_lower_bound_last = Lk_lower_bound
+        Lk_upper_bound_last = Lk_upper_bound
     
-    Lk_lower_bounds = [
-        converter.auxiliary_inductor.get_inductance(gap_width_bound[1]),
-        max(Lk_restriction_s1(converter, Vmin, Dmax, Li_upper_bound, frequency_upper_bound), Lk_restriction_s1(converter, Vmax, Dmin, Li_upper_bound, frequency_upper_bound)),
-        max(Lk_restriction_s2(converter, Vmin, Dmax, Li_upper_bound, frequency_upper_bound), Lk_restriction_s2(converter, Vmax, Dmin, Li_upper_bound, frequency_upper_bound))
-    ]
-    Lk_upper_bounds = [
-        converter.auxiliary_inductor.get_inductance(gap_width_bound[0])
-    ]
-    Lk_upper_bound = min(Lk_upper_bounds)
-    Lk_lower_bound = max(Lk_lower_bounds)
+    
 
+    feasible = True
+    if frequency_lower_bound > frequency_upper_bound or Li_lower_bound > Li_upper_bound or Lk_lower_bound > Lk_upper_bound:
+        feasible = False
     bounds = ((frequency_lower_bound, frequency_upper_bound), (Li_lower_bound, Li_upper_bound), (Lk_lower_bound, Lk_upper_bound))
-    print(bounds)
-    return bounds
+    return [bounds, feasible]
 
 def rescale(vector, bounds, function=None):
     xmax = max(vector)
