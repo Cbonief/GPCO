@@ -76,70 +76,69 @@ Li = Inductor(core[1], cables[1], N[2], Ncond[2])
 Lk = Inductor(core[2], cables[2], N[3], Ncond[3])
 
 converter = BoostHalfBridgeInverter(Trafo, Li, Lk, circuit_features, switches, diodes, capacitors, safety_params)
-converter.transformer.set_name('Bosta')
 converter.summarize()
 
-# solution = optimize_converter(converter, epochs=5)
-# print(solution)
-# # constraints = converter.total_constraint(solution.x)
-# # print(constraints)
+solution = optimize_converter(converter, epochs=10)
+print(solution)
+# constraints = converter.total_constraint(solution.x)
+# print(constraints)
     
-# Lss = 2.562e-4
-# uo = 4*np.pi*1e-7
-# lg = (28**2)*uo*NEE_42_20.Ae/Lss
+Lss = 2.562e-4
+uo = 4*np.pi*1e-7
+lg = (28**2)*uo*NEE_42_20.Ae/Lss
 
-# number_of_points = 100
+number_of_points = 100
 
-# f = np.logspace(3, 5, number_of_points)
-# lossVec = np.zeros(number_of_points)
-# t = np.zeros(number_of_points)
+f = np.logspace(3, 5, number_of_points)
+lossVec = np.zeros(number_of_points)
+t = np.zeros(number_of_points)
 
-# expected_losses = {
-#     'Transformer': {'Core': 2.911, 'Primary': 0.718, 'Secondary': 0.82},
-#     'EntranceInductor': {'Core': 0.036, 'Cable': 2.103},
-#     'AuxiliaryInductor': {'Core': 0.438, 'Cable': 0.235},
-#     'Capacitors': {'C1': 0.148, 'C2': 0.181, 'C3': 0.112, 'C4': 0.038},
-#     'Diode': {'D3': 0.487, 'D4': 0.487},
-#     'Switches': {'S1': 0.308, 'S2': 0.957}
-# }
-# total = 0
-# for component in expected_losses:
-#     for lossType in expected_losses[component]:
-#         total += expected_losses[component][lossType]
-# expected_losses['Total'] = total
+expected_losses = {
+    'Transformer': {'Core': 2.911, 'Primary': 0.718, 'Secondary': 0.82},
+    'EntranceInductor': {'Core': 0.036, 'Cable': 2.103},
+    'AuxiliaryInductor': {'Core': 0.438, 'Cable': 0.235},
+    'Capacitors': {'C1': 0.148, 'C2': 0.181, 'C3': 0.112, 'C4': 0.038},
+    'Diode': {'D3': 0.487, 'D4': 0.487},
+    'Switches': {'S1': 0.308, 'S2': 0.957}
+}
+total = 0
+for component in expected_losses:
+    for lossType in expected_losses[component]:
+        total += expected_losses[component][lossType]
+expected_losses['Total'] = total
 
-# losses = converter.compensated_total_loss([50e3, Lss, 1e-6], get_all=True)
-# error = {}
-# for component in expected_losses:
-#     error[component] = {}
-#     if component != 'Total':
-#         for lossType in expected_losses[component]:
-#             expected = expected_losses[component][lossType]
-#             calculated = losses[component][lossType]
-#             error[component][lossType] = round(100*(expected - calculated)/expected)
-#     else:
-#         error[component] = round(100*(expected_losses[component] - losses[component])/expected_losses[component])
+losses = converter.compensated_total_loss([50e3, Lss, 1e-6], get_all=True)
+error = {}
+for component in expected_losses:
+    error[component] = {}
+    if component != 'Total':
+        for lossType in expected_losses[component]:
+            expected = expected_losses[component][lossType]
+            calculated = losses[component][lossType]
+            error[component][lossType] = round(100*(expected - calculated)/expected)
+    else:
+        error[component] = round(100*(expected_losses[component] - losses[component])/expected_losses[component])
 
 
-# Bmax = Lss * 7.836 / (converter.entrance_inductor.Core.Ae * converter.entrance_inductor.N)
-# dB = Lss * 0.747 / (converter.entrance_inductor.Core.Ae * converter.entrance_inductor.N)
+Bmax = Lss * 7.836 / (converter.entrance_inductor.Core.Ae * converter.entrance_inductor.N)
+dB = Lss * 0.747 / (converter.entrance_inductor.Core.Ae * converter.entrance_inductor.N)
 
-# expected_values = {
-#     'Vc3': 218.297,
-#     'Vc4': 181.496,
-#     'D': 0.55,'t3': 4.374e-7, 't6': 1.136e-5,
-#     'Vc1': 21.267, 'Vc2': 17.4,
-#     'Ipk_pos': 16.239, 'Ipk_neg': -13.286, 'Ipk_pos_1': 16.096, 'Ipk_neg_1': -13.383,
-#     'Ipk': 7.836, 'Imin': 7.089,'Iin': 7.462,'dIin': 0.747,
-#     'dBLi': dB, 'BmaxLi': Bmax,
-#     'Is1max': 9.15,'Is2max': 21.112,
-#     'TransformerIrms': 8.474,
-#     'C1Irms': 3.789,'C2Irms': 7.759,
-#     'S1Irms': 3.789,'S2Irms': 10.715,
-#     'D3Iavg': 0.325,'D3Irms': 0.557,
-#     'D4Iavg': 0.325,'D4Irms': 0.508,
-#     'C3Irms': 0.452, 'C4Irms': 0.38
-# }
+expected_values = {
+    'Vc3': 218.297,
+    'Vc4': 181.496,
+    'D': 0.55,'t3': 4.374e-7, 't6': 1.136e-5,
+    'Vc1': 21.267, 'Vc2': 17.4,
+    'Ipk_pos': 16.239, 'Ipk_neg': -13.286, 'Ipk_pos_1': 16.096, 'Ipk_neg_1': -13.383,
+    'Ipk': 7.836, 'Imin': 7.089,'Iin': 7.462,'dIin': 0.747,
+    'dBLi': dB, 'BmaxLi': Bmax,
+    'Is1max': 9.15,'Is2max': 21.112,
+    'TransformerIrms': 8.474,
+    'C1Irms': 3.789,'C2Irms': 7.759,
+    'S1Irms': 3.789,'S2Irms': 10.715,
+    'D3Iavg': 0.325,'D3Irms': 0.557,
+    'D4Iavg': 0.325,'D4Irms': 0.508,
+    'C3Irms': 0.452, 'C4Irms': 0.38
+}
 
 # simulation_error = {}
 # for value in expected_values:
@@ -159,60 +158,6 @@ converter.summarize()
 #     if abs(simulation_error[var]) > 10:
 #         print('Erro' + var + ':' + str(simulation_error[var])+' %')
 
-# print(losses)
-# from scipy.optimize import minimize
-
-# x0 = [0.05933896, 0.21196682, 0.08155678, 0.23724257]
-# bounds = ((1e-2, 10e-2), (1e-2, 5e-1),(1e-2, 10e-2), (1e-2, 5e-1))
-
-
-# def objective(X):
-#     CoreLk = converter.auxiliary_inductor.Core
-#     CoreLk.Lt = X[0]
-#     CoreLk.Bj = X[1]
-#     CoreTrafo = converter.transformer.Primary.Core
-#     CoreTrafo.Lt = X[2]
-#     CoreTrafo.Bj = X[3]
-#     Trafo = Transformer(CoreTrafo, [cables[0], cables[0]], [N[0], N[1]], [Ncond[0], Ncond[1]])
-#     Lk = Inductor(CoreLk, cables[2], N[3], Ncond[3])
-#     converter.transformer = Trafo
-#     converter.auxiliary_inductor = Lk
-#     losses = converter.compensated_total_loss([50e3, Lss, 1e-6], get_all=True, override=True)
-#     expected = [0.235, 0.718]
-#     calculated = [losses['AuxiliaryInductor']['Cable'], losses['Transformer']['Primary']]
-#     error = (expected[0]-calculated[0])**2 + (expected[1]-calculated[0])**2
-#     return np.sqrt(error)
-
-# def contraint(X):
-#     return [X[3] - X[1], X[2] - X[0]]
-
-# best = objective([0.13505891, 0.12959618, 0.13505891, 0.40135321])
-# times_beaten = 0
-# for i in range(0, 100):
-#     x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[0]), random_in_range(bounds[1])])
-#     solution = minimize(
-#         objective,
-#         x0,
-#         method='SLSQP',
-#         tol= 1e-15,
-#         options={'maxiter': 1000, 'disp': False},
-#         constraints = {'fun': contraint, 'type': 'ineq'}
-#     )
-#     if solution.fun < best and solution.success:
-#         times_beaten += 1
-#         best = solution.fun
-#         print(best)
-#         print(solution.x)
-#         result = solution
-#         print('Beaten solution ' + str(times_beaten) + ' times')
-#     print(i)
-
-# print(result)
-
-# def random_in_range(bound):
-#     b = bound[1]
-#     a = bound[0]
-#     return (b - a) * np.random.random_sample() + a
 
 # last_p = 1
 # mean_time = 0
