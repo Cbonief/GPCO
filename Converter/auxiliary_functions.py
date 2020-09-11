@@ -1,19 +1,27 @@
 import numpy as np
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, root, minimize
+import fqs as fqs
 
 def vc3_vc4_d(obj, fs, Lk):
-    Ts = 1 / fs
-    x0 = [obj.design_features['Vo'] / 2, obj.design_features['Vo'] / 2, 0.5]
-    k1 = obj.design_features['Ro'] * Ts / (2 * Lk * obj.design_features['Vi']['Nominal'] * (obj.transformer.Ratio ** 3))
+    x0 = [obj.design_features['Vo'] / 2, obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, (obj.design_features['D']['Min']+obj.design_features['D']['Max'])/2]
+    k1 = obj.design_features['Ro'] / (2 * Lk * fs* obj.design_features['Vi']['Nominal'] * (obj.transformer.Ratio ** 3))
     k2 = obj.transformer.Ratio * obj.design_features['Vi']['Nominal']
-    sol = fsolve(fvo, x0, args=(k1, k2, obj.design_features['Vo']))
-    return sol
+    solution = fsolve(fvo, x0, args=(k1, k2, obj.design_features['Vo']))
+    return solution
+
+def vo(obj, fs, Lk, D):
+    Vi = obj.design_features['Vi']['Nominal']
+    n = obj.transformer.Ratio
+    Ro = obj.design_features['Ro']
+    
+    Vo = Vi*n*Ro*D**2*(1-D)/(n**2*Lk*fs*((2*D-1)**2+1) + D**2*Ro*(1-D)**2)
+
 
 def fvo(X, k1, k2, Vo):
     Vc3 = X[0]
     Vc4 = X[1]
     D = X[2]
-    return [Vo ** 3 + k1 * (Vc3 ** 2) * (Vc4 - k2) * (Vc4 * (1 - D) + D * k2), Vo ** 3 + k1 * (Vc4 ** 2) * (Vc3 + k2) * (Vc3 * (1 - D) - D * k2), Vc3 + Vc4 - Vo]
+    return np.array([Vo + k1 * (Vc3 ** 2) * (Vc4 - k2) * (Vc4 * (1 - D) + D * k2)/(Vo**2), Vo + k1 * (Vc4 ** 2) * (Vc3 + k2) * (Vc3 * (1 - D) - D * k2)/(Vo**2), Vc3 + Vc4 - Vo])
 
 def t3t6(obj, calculated_values):
     Ts = calculated_values['Ts']
@@ -433,3 +441,17 @@ def f2(delta):
 
 
 #     return 2*obj.transformer.Ratio*Vo/(Ro*(1-Dmin)) - (Po/(2*Vmax)) + (Vmax*Dmin)/(2*Li_lower_bound*frequency_upper_bound)
+
+
+
+def rescale(vector, bounds, function=None):
+    xmax = max(vector)
+    xmin = min(vector)
+    a = (bounds[1] - bounds[0]) / (xmax - xmin)
+    b = (xmax * bounds[0] - xmin * bounds[1]) / (xmax - xmin)
+    rescaled = np.zeros(np.size(vector))
+    for index in range(0, np.size(vector)):
+        rescaled[index] = a * vector[index] + b
+        if function:
+            rescaled[index] = function(rescaled[index])
+    return rescaled
