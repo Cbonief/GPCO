@@ -13,11 +13,6 @@ class BoostHalfBridgeInverter:
             'Max': 1-(self.design_features['Vi']['Min']*transformer.Ratio/self.design_features['Vo']),
             'Min': 1-(self.design_features['Vi']['Max']*transformer.Ratio/self.design_features['Vo'])
         }
-
-        Dmax = 1-(self.design_features['Vi']['Min']*transformer.Ratio/self.design_features['Vo'])
-        Dmin = 1-(self.design_features['Vi']['Max']*transformer.Ratio/self.design_features['Vo'])
-
-
         self.safety_params = safety_params
 
         self.loss_functions = Losses.loss_function_map
@@ -59,10 +54,6 @@ class BoostHalfBridgeInverter:
     :return: a single float value.
     """
     def compensated_total_loss(self, X, activation_table=True, get_all=False, override=False):
-        self.transformer.Primary.calculate_rca(X[0], 100)
-        self.transformer.Secondary.calculate_rca(X[0], 100)
-        self.entrance_inductor.calculate_rca(X[0], 40)
-        self.auxiliary_inductor.calculate_rca(X[0], 100)
         if get_all:
             loss_function = self.total_loss_separate
         else:
@@ -71,6 +62,7 @@ class BoostHalfBridgeInverter:
         if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
             return self.last_calculated_loss
         else:
+            self.simulate_efficiency_independent_variables(X)
             efficiency = 0.8
             total_loss = self.design_features['Po'] * (1 - efficiency) / efficiency
             error = 2
@@ -99,7 +91,7 @@ class BoostHalfBridgeInverter:
     """
     def total_loss(self, X, efficiency):
         output = 0
-        self.simulate_circuit(X, efficiency)
+        self.simulate_efficiency_dependent_variables(X, efficiency)
         for component in self.loss_functions:
             for loss_type in self.loss_functions[component]:
                 if self.loss_functions_activation_map[component][loss_type]:
@@ -116,7 +108,7 @@ class BoostHalfBridgeInverter:
     def total_loss_separate(self, X, efficiency):
         output = {}
         total = 0
-        self.simulate_circuit(X, efficiency)
+        self.simulate_efficiency_dependent_variables(X, efficiency)
         for component in self.loss_functions:
             output[component] = {}
             for loss_type in self.loss_functions[component]:
@@ -147,7 +139,7 @@ class BoostHalfBridgeInverter:
             
         for restriction in self.restriction_functions:
             func = restriction['function']
-            res = func(self, [X[0], X[1], X[2]])
+            res = func(self, X)
             if math.isnan(res) or math.isinf(res):
                 res = -10
             constraints.append(res)
@@ -177,10 +169,44 @@ class BoostHalfBridgeInverter:
     def get_simulated_values(self):
         return self.calculated_values
 
-    def simulate_circuit(self, X, efficiency):
+    def simulate_efficiency_dependent_variables(self, X, efficiency):
+        # Efficiency dependent.
+        Li = X[1]
+        Iin = (self.design_features['Po'] / (self.design_features['Vi']['Nominal']*efficiency))
+        dIin = self.calculated_values['dIin']
+        Ipk_pos = self.calculated_values['Ipk_pos']
+        Ipk_neg = self.calculated_values['Ipk_neg']
+        Ipk = Iin + (dIin / 2)
+        Imin = Iin - (dIin / 2)
+        Is1max = Ipk_pos - Imin
+        Is2max = Ipk - Ipk_neg
+        BmaxLi = Li*Ipk/(self.entrance_inductor.N*self.entrance_inductor.Core.Ae)
+        aux = {
+            'Ipk': Ipk,
+            'Imin': Imin,
+            'Iin': Iin,
+            'BmaxLi': BmaxLi,
+            'dIin': dIin,
+            'Is1max': Is1max,
+            'Is2max': Is2max
+        }
+        self.calculated_values.update(aux)
+        self.calculated_values['C1Irms'] = Functions.c1_irms(self, self.calculated_values)
+        self.calculated_values['C2Irms'] = Functions.c2_irms(self, self.calculated_values)
+        self.calculated_values['S1Irms'] = Functions.s1_irms(self, self.calculated_values)
+        self.calculated_values['S2Irms'] = Functions.s2_irms(self, self.calculated_values)
+        self.calculated_values['EntranceInductorHarmonics'] = Functions.InputCurrentHarmonics(self, self.calculated_values)
+        self.calculated_values['LiIrms'] = Functions.LiIrms(self, self.calculated_values)
+
+    def simulate_efficiency_independent_variables(self, X):
         fs = X[0]
         Li = X[1]
         Lk = X[2]
+
+        self.transformer.Primary.calculate_rca(fs, 100)
+        self.transformer.Secondary.calculate_rca(fs, 100)
+        self.entrance_inductor.calculate_rca(fs, 40)
+        self.auxiliary_inductor.calculate_rca(fs, 100)
 
         Ts = 1 / fs
 
@@ -208,22 +234,15 @@ class BoostHalfBridgeInverter:
         Vc2 = Vi
         n = self.transformer.Ratio
 
-        dIin = Vi * D * Ts / Li
-        Iin = (Po / (Vi*efficiency))
-        Ipk = Iin + (dIin / 2)
-        Imin = Iin - (dIin / 2)
-
         Ipk_pos = 2 * n * Vo / (Ro * (1-D))
         Ipk_neg = -2 * n * Vo / (Ro * D)
         Ipk_pos_1 = 2 * n * Ts * Vo / (Ro * (Ts + t3 - t6))
         Ipk_neg_1 = 2 * n * Ts * Vo / (Ro * (t3 - t6))
-        
+
+        dIin = Vi * D * Ts / Li
         
         Io = Po / Vo
         dBLi = Li*dIin/(self.entrance_inductor.N*self.entrance_inductor.Core.Ae)
-        BmaxLi = Li*Ipk/(self.entrance_inductor.N*self.entrance_inductor.Core.Ae)
-        Is1max = Ipk_pos - Imin
-        Is2max = Ipk - Ipk_neg
 
         aux = {
             't3': t3,
@@ -235,28 +254,17 @@ class BoostHalfBridgeInverter:
             'Ipk_neg': Ipk_neg,
             'Ipk_pos_1': Ipk_pos_1,
             'Ipk_neg_1': Ipk_neg_1,
-            'Ipk': Ipk,
-            'Imin': Imin,
-            'Iin': Iin,
             'Li': Li,
             'Lk': Lk,
             'Io': Io,
             'dBLi': dBLi,
-            'BmaxLi': BmaxLi,
-            'dIin': dIin,
-            'Is1max': Is1max,
-            'Is2max': Is2max
+            'dIin': dIin
         }
         calculated_values.update(aux)
 
+        # Not efficiency dependent.
         LkVrms = Functions.AuxiliaryInductorVrms(self, calculated_values)
-
-        
         calculated_values['TransformerIrms'] = Functions.TransformerIRms(self, calculated_values)[0]
-        calculated_values['C1Irms'] = Functions.c1_irms(self, calculated_values)
-        calculated_values['C2Irms'] = Functions.c2_irms(self, calculated_values)
-        calculated_values['S1Irms'] = Functions.s1_irms(self, calculated_values)
-        calculated_values['S2Irms'] = Functions.s2_irms(self, calculated_values)
         calculated_values['D3Iavg'] = Functions.D3Iavg(self, calculated_values)
         calculated_values['D3Irms'] = Functions.D3Irms(self, calculated_values)
         calculated_values['D4Iavg'] = Functions.D4Iavg(self, calculated_values)
@@ -264,10 +272,9 @@ class BoostHalfBridgeInverter:
         calculated_values['C3Irms'] = Functions.C3Irms(self, calculated_values)
         calculated_values['C4Irms'] = Functions.C4Irms(self, calculated_values)
         calculated_values['TransformerHarmonics'] = Functions.TransformerCurrentHarmonics(self, calculated_values)
-        calculated_values['EntranceInductorHarmonics'] = Functions.InputCurrentHarmonics(self, calculated_values)
-        calculated_values['LiIrms'] = Functions.LiIrms(self, calculated_values)
         calculated_values['LkVrms'] = LkVrms
         calculated_values['BmaxLk'] = LkVrms/(self.auxiliary_inductor.Core.Ae*fs*7*self.auxiliary_inductor.N)
+
         self.calculated_values = calculated_values
 
     def summarize(self):

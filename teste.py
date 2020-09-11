@@ -76,10 +76,10 @@ Li = Inductor(core[1], cables[1], N[2], Ncond[2])
 Lk = Inductor(core[2], cables[2], N[3], Ncond[3])
 
 converter = BoostHalfBridgeInverter(Trafo, Li, Lk, circuit_features, switches, diodes, capacitors, safety_params)
-converter.summarize()
+# converter.summarize()
 
-solution = optimize_converter(converter, epochs=10)
-print(solution)
+# solution = optimize_converter(converter, epochs=10)
+# print(solution)
 # constraints = converter.total_constraint(solution.x)
 # print(constraints)
     
@@ -93,52 +93,52 @@ f = np.logspace(3, 5, number_of_points)
 lossVec = np.zeros(number_of_points)
 t = np.zeros(number_of_points)
 
-expected_losses = {
-    'Transformer': {'Core': 2.911, 'Primary': 0.718, 'Secondary': 0.82},
-    'EntranceInductor': {'Core': 0.036, 'Cable': 2.103},
-    'AuxiliaryInductor': {'Core': 0.438, 'Cable': 0.235},
-    'Capacitors': {'C1': 0.148, 'C2': 0.181, 'C3': 0.112, 'C4': 0.038},
-    'Diode': {'D3': 0.487, 'D4': 0.487},
-    'Switches': {'S1': 0.308, 'S2': 0.957}
-}
-total = 0
-for component in expected_losses:
-    for lossType in expected_losses[component]:
-        total += expected_losses[component][lossType]
-expected_losses['Total'] = total
+# expected_losses = {
+#     'Transformer': {'Core': 2.911, 'Primary': 0.718, 'Secondary': 0.82},
+#     'EntranceInductor': {'Core': 0.036, 'Cable': 2.103},
+#     'AuxiliaryInductor': {'Core': 0.438, 'Cable': 0.235},
+#     'Capacitors': {'C1': 0.148, 'C2': 0.181, 'C3': 0.112, 'C4': 0.038},
+#     'Diode': {'D3': 0.487, 'D4': 0.487},
+#     'Switches': {'S1': 0.308, 'S2': 0.957}
+# }
+# total = 0
+# for component in expected_losses:
+#     for lossType in expected_losses[component]:
+#         total += expected_losses[component][lossType]
+# expected_losses['Total'] = total
 
-losses = converter.compensated_total_loss([50e3, Lss, 1e-6], get_all=True)
-error = {}
-for component in expected_losses:
-    error[component] = {}
-    if component != 'Total':
-        for lossType in expected_losses[component]:
-            expected = expected_losses[component][lossType]
-            calculated = losses[component][lossType]
-            error[component][lossType] = round(100*(expected - calculated)/expected)
-    else:
-        error[component] = round(100*(expected_losses[component] - losses[component])/expected_losses[component])
+# losses = converter.compensated_total_loss([50e3, Lss, 1e-6], get_all=True)
+# error = {}
+# for component in expected_losses:
+#     error[component] = {}
+#     if component != 'Total':
+#         for lossType in expected_losses[component]:
+#             expected = expected_losses[component][lossType]
+#             calculated = losses[component][lossType]
+#             error[component][lossType] = round(100*(expected - calculated)/expected)
+#     else:
+#         error[component] = round(100*(expected_losses[component] - losses[component])/expected_losses[component])
 
 
-Bmax = Lss * 7.836 / (converter.entrance_inductor.Core.Ae * converter.entrance_inductor.N)
-dB = Lss * 0.747 / (converter.entrance_inductor.Core.Ae * converter.entrance_inductor.N)
+# Bmax = Lss * 7.836 / (converter.entrance_inductor.Core.Ae * converter.entrance_inductor.N)
+# dB = Lss * 0.747 / (converter.entrance_inductor.Core.Ae * converter.entrance_inductor.N)
 
-expected_values = {
-    'Vc3': 218.297,
-    'Vc4': 181.496,
-    'D': 0.55,'t3': 4.374e-7, 't6': 1.136e-5,
-    'Vc1': 21.267, 'Vc2': 17.4,
-    'Ipk_pos': 16.239, 'Ipk_neg': -13.286, 'Ipk_pos_1': 16.096, 'Ipk_neg_1': -13.383,
-    'Ipk': 7.836, 'Imin': 7.089,'Iin': 7.462,'dIin': 0.747,
-    'dBLi': dB, 'BmaxLi': Bmax,
-    'Is1max': 9.15,'Is2max': 21.112,
-    'TransformerIrms': 8.474,
-    'C1Irms': 3.789,'C2Irms': 7.759,
-    'S1Irms': 3.789,'S2Irms': 10.715,
-    'D3Iavg': 0.325,'D3Irms': 0.557,
-    'D4Iavg': 0.325,'D4Irms': 0.508,
-    'C3Irms': 0.452, 'C4Irms': 0.38
-}
+# expected_values = {
+#     'Vc3': 218.297,
+#     'Vc4': 181.496,
+#     'D': 0.55,'t3': 4.374e-7, 't6': 1.136e-5,
+#     'Vc1': 21.267, 'Vc2': 17.4,
+#     'Ipk_pos': 16.239, 'Ipk_neg': -13.286, 'Ipk_pos_1': 16.096, 'Ipk_neg_1': -13.383,
+#     'Ipk': 7.836, 'Imin': 7.089,'Iin': 7.462,'dIin': 0.747,
+#     'dBLi': dB, 'BmaxLi': Bmax,
+#     'Is1max': 9.15,'Is2max': 21.112,
+#     'TransformerIrms': 8.474,
+#     'C1Irms': 3.789,'C2Irms': 7.759,
+#     'S1Irms': 3.789,'S2Irms': 10.715,
+#     'D3Iavg': 0.325,'D3Irms': 0.557,
+#     'D4Iavg': 0.325,'D4Irms': 0.508,
+#     'C3Irms': 0.452, 'C4Irms': 0.38
+# }
 
 # simulation_error = {}
 # for value in expected_values:
@@ -159,56 +159,33 @@ expected_values = {
 #         print('Erro' + var + ':' + str(simulation_error[var])+' %')
 
 
-# last_p = 1
-# mean_time = 0
-# for n in range(0, number_of_points):
-#     p = n
-#     if p != last_p:
-#         print(str(p) + "%")
-#         last_p = p
-#     start = time.time() 
-#     lossVec[n] = converter.compensated_total_loss([f[n], Lss, 0.5e-6], get_all=True)
-#     end = time.time()
-#     t[n] = end - start
-#     mean_time += t[n]
-# mean_time = mean_time/100
-# print(mean_time)
+last_p = 1
+mean_time = 0
+for n in range(0, number_of_points):
+    p = n
+    if p != last_p:
+        print(str(p) + "%")
+        last_p = p
+    start = time.time() 
+    lossVec[n] = converter.compensated_total_loss([f[n], Lss, 0.5e-6], get_all=False)
+    end = time.time()
+    t[n] = end - start
+    mean_time += t[n]
+mean_time = mean_time/100
+print(mean_time)
 
-# var = 0
-# for element in t:
-#     var += (element - mean_time)**2
+var = 0
+for element in t:
+    var += (element - mean_time)**2
 
-# var = np.sqrt(var)/100
-# print(var)
-    
-# for lossClass in Losses:
-#     print(lossClass)
-#     printString1 = ""
-#     printString2 = ""
-#     if lossClass != "Total":
-#         for lossType in Losses[lossClass]:
-#             printString1 += lossType + " | "
-#             printString2 += str(Losses[lossClass][lossType]) + " | "
-#     print(printString1)
-#     print(printString2)
-
-# minimo = 100
-# bestF = 0
-# for [freq, loss] in zip(f, lossVec):
-#     if loss < minimo:
-#         minimo = loss
-#         bestF = freq
+var = np.sqrt(var)/100
+print(var)
 
 
-# print(bestF)
-
-# print(determine_bounds(converter))
-
-# figure()
-# axes()
-# semilogx(f, lossVec)
-# xlabel('Frequência (Hz)')
-# ylabel('Perdas (W)')
-# grid()
-# savefig("Saved Data/Figures/Loss_Frequency_Carolina")
-# show()
+figure()
+axes()
+semilogx(f, lossVec)
+xlabel('Frequência (Hz)')
+ylabel('Perdas (W)')
+grid()
+show()
