@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.optimize import fsolve, root, minimize
-import fqs as fqs
 
 def vc3_vc4_d(obj, fs, Lk):
     x0 = [obj.design_features['Vo'] / 2, obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, (obj.design_features['D']['Min']+obj.design_features['D']['Max'])/2]

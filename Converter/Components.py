@@ -202,4 +202,4 @@ class Capacitor(Component):
         Component.__init__(self, Name)
         self.C = C
         self.RSE = Rse
-        self.Vmax = Vmax
+        self.Vmax = Vmax    
