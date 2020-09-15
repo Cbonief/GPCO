@@ -39,10 +39,27 @@ The step "Test Population" is when the gradient based algorithm get's used, beca
 In the GPCO the default numeric optimizer for this layer is SLSQP (Sequential Least Square Quadratic Programming), using the package SciPy. But in fact any optimizer that is able to deal with inequality constraints is suitable for the job. Some examples of these type of optimizers are: COBYLA, SUMT and ALAG.
 
 ## 3. How to components are implemented
-The class diagram
+The latest implementation of the converter's components can be seen in the class diagram below. In it we see that all components inherit from the class Component, whose only information is the name of the component.
 
 *Figure 3 -  Components Class Diagram*
 
 ![enter image description here](https://i.imgur.com/48baHHL.jpg)
 
 ## 4. Converter Implementation 
+
+A class diagram will be added soon.
+
+## 5. Future work
+
+Currently, all restrictions and losses are hard coded for the Boost Half Bridge, so for the future we have the following goals:
+- Refactor how the components are stored in the converter, so they can all be called from a single for loop if need, or called by type.
+
+- Implement component especific restrictitions and losses in the component's class.
+
+- Make it so the user can insert their own custom current or voltage equation for all the components. The same will be done for converter especific restrictions.
+
+- The restrictions will be separate based on wheter they depend on:
+1. only component.
+2. more than one component.
+3. the continuous variables but no on the efficiency of the converter.
+4. the efficiency of the converter.
