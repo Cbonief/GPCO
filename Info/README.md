@@ -4,7 +4,7 @@ This folder contains info related to the Boost Half Bridge Converter and also th
 
 ## Boost Half Bridge
 
-##$ Lista dos parâmetros de Projeto
+### Lista dos parâmetros de Projeto
 - Vo
 - V ('Nominal', 'Max', 'Min')
 - Po
@@ -39,8 +39,8 @@ This folder contains info related to the Boost Half Bridge Converter and also th
 - D3 e D4.
 ##### Transformador
 - Núcleo
-- Np e Ns.
-- NcondP e NcondS.
+- Np e Ns. *(Valores inteiros)*
+- NcondP e NcondS. *(Valores inteiros)*
 - Cabo do Primário e do Secundário.
 ##### Li
 - Núcleo.
