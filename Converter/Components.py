@@ -21,6 +21,7 @@ try:
 except FileNotFoundError:
     print('Didn´t find FSD')
 
+# Classe base que contém o nome do componente.
 class Component:
     def __init__(self, Name):
         self.Name = Name
@@ -30,6 +31,31 @@ class Component:
 
     def get_name(self):
         return self.Name
+
+class Switch(Component):
+    def __init__(self, ton, toff, Rdson, Vmax, Cds=0, Name=None):
+        Component.__init__(self, Name)
+        self.Ton = ton
+        self.Toff = toff
+        self.Rdson = Rdson
+        self.Vmax = Vmax
+        self.Cds = Cds
+
+
+class Diode(Component):
+    def __init__(self, vd, rt, Vmax, Name=None):
+        Component.__init__(self, Name)
+        self.Vd = vd
+        self.Rt = rt
+        self.Vmax = Vmax
+
+
+class Capacitor(Component):
+    def __init__(self, C, Rse, Vmax, Name=None):
+        Component.__init__(self, Name)
+        self.C = C
+        self.RSE = Rse
+        self.Vmax = Vmax    
 
 class Cable(Component):
     def __init__(self, Dcu, D, rho, Ur, Name=None):
@@ -79,6 +105,8 @@ class Inductor(Component):
 
         self.used_area = cable.S * N * Ncond
 
+    # Calcula a RCA do conversor com a metodologia de Dowell. Utiliza um fo fundamental e um número 'noc' de termos
+    # serão calculados.
     def calculate_rca(self, fo, noc):
         self.rca = np.zeros(noc)
         for n in range(0, noc):
@@ -177,29 +205,3 @@ class Transformer(Component):
                     self.set_parameter(name, (self.Core.Aw*ku - self.Secondary.used_area)/(self.Primary.N*self.Primary.Cable.S))
                 elif name == 'Nconds':
                     self.set_parameter(name, (self.Core.Aw * ku - self.Primary.used_area) / (self.Secondary.N * self.Secondary.Cable.S))
-
-
-class Switch(Component):
-    def __init__(self, ton, toff, Rdson, Vmax, Cds=0, Name=None):
-        Component.__init__(self, Name)
-        self.Ton = ton
-        self.Toff = toff
-        self.Rdson = Rdson
-        self.Vmax = Vmax
-        self.Cds = Cds
-
-
-class Diode(Component):
-    def __init__(self, vd, rt, Vmax, Name=None):
-        Component.__init__(self, Name)
-        self.Vd = vd
-        self.Rt = rt
-        self.Vmax = Vmax
-
-
-class Capacitor(Component):
-    def __init__(self, C, Rse, Vmax, Name=None):
-        Component.__init__(self, Name)
-        self.C = C
-        self.RSE = Rse
-        self.Vmax = Vmax    

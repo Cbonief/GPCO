@@ -1,18 +1,18 @@
 from Optimizer import *
 from TestComponents import *
 
-
-
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
 
 print('\nCriando componentes')
 
+# Carrega os componentes presentes no arquivo TestComponents.py.
 diodes = [HFA04SD60S, IdealDiode]
 capacitors = [capacitor1, capacitor2, capacitor3, capacitor4]
 switches = [IRFR7740PbF, IdealSwitch]
 cores = [NEE_20, NEE_30_15, NEE_42_20_Ideal, NEE_20_Ideal, NEE_30_15_Ideal, NEE_42_20_Ideal]
 cables = [AWG_23, IdealCable]
 
+# Cria a estura responsável por passar os componentes disponível para a busca do GA.
 selected_components = {
     'Cores': cores,
     'Switches': switches,
@@ -21,9 +21,7 @@ selected_components = {
     'Cables': cables
 }
 
-print('\nConfigurando conversor')
-# Cria as características do conversor.
-# @circuit
+# Parâmetros desejáveis do conversor.
 design_features = {
     'Vo': 400,
     'D': {'Max': 0.7, 'Min': 0.3},
@@ -38,6 +36,7 @@ design_features = {
     'Jmax': 450*1e4
 }
 
+# Parâmetros de segurança.
 safety_params = {
     'Vc': 1.5,
     'Vd': 1.5,
@@ -48,5 +47,8 @@ safety_params = {
     'ku': {'Transformer': 0.4, 'EntranceInductor': 0.6, 'AuxiliaryInductor': 0.4}
 }
 
+# Cria uma instância do Algoritmo Genético.
 GA = genetic_optimizer(selected_components, design_features, safety_params)
-sol = GA.optimize(population_size=10)
+
+# Otimiza o conversor utilizando uma população de 10 indivíduos.
+solution = GA.optimize(population_size=10)

@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import fsolve, root, minimize
 
+# Calcula Vc3, Vc4 e a razão cíclica necessária para obter o valor de Vo desejado.
 def vc3_vc4_d(obj, fs, Lk):
     x0 = [obj.design_features['Vo'] / 2, obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, (obj.design_features['D']['Min']+obj.design_features['D']['Max'])/2]
     k1 = obj.design_features['Ro'] / (2 * Lk * fs* obj.design_features['Vi']['Nominal'] * (obj.transformer.Ratio ** 3))
@@ -8,6 +9,14 @@ def vc3_vc4_d(obj, fs, Lk):
     solution = fsolve(fvo, x0, args=(k1, k2, obj.design_features['Vo']))
     return solution
 
+# Sistema de equações para obter Vc3, Vc4 e D.
+def fvo(X, k1, k2, Vo):
+    Vc3 = X[0]
+    Vc4 = X[1]
+    D = X[2]
+    return np.array([Vo + k1 * (Vc3 ** 2) * (Vc4 - k2) * (Vc4 * (1 - D) + D * k2)/(Vo**2), Vo + k1 * (Vc4 ** 2) * (Vc3 + k2) * (Vc3 * (1 - D) - D * k2)/(Vo**2), Vc3 + Vc4 - Vo])
+
+# Calcula Vo, utilizando a formula aproximada. Função apenas de teste.
 def vo(obj, fs, Lk, D):
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
@@ -15,13 +24,7 @@ def vo(obj, fs, Lk, D):
     
     Vo = Vi*n*Ro*D**2*(1-D)/(n**2*Lk*fs*((2*D-1)**2+1) + D**2*Ro*(1-D)**2)
 
-
-def fvo(X, k1, k2, Vo):
-    Vc3 = X[0]
-    Vc4 = X[1]
-    D = X[2]
-    return np.array([Vo + k1 * (Vc3 ** 2) * (Vc4 - k2) * (Vc4 * (1 - D) + D * k2)/(Vo**2), Vo + k1 * (Vc4 ** 2) * (Vc3 + k2) * (Vc3 * (1 - D) - D * k2)/(Vo**2), Vc3 + Vc4 - Vo])
-
+# Calcula t3 e t6.
 def t3t6(obj, calculated_values):
     Ts = calculated_values['Ts']
     Vc3 = calculated_values['Vc3']
@@ -37,7 +40,7 @@ def t3t6(obj, calculated_values):
     t6 = Ts * (Vi * (Vc4 * D + Vc3)*n + (D - 1) * Vc3 * Vc4) / (Vi * n * Vo)
     return [t3, t6]
 
-
+'EQUAÇÕES DE TENSÃO E CORRENTE DOS COMPONENTES'
 def TransformerIRms(obj, calculated_values):
     Ts = calculated_values['Ts']
     Vc3 = calculated_values['Vc3']
@@ -374,25 +377,7 @@ def C4Irms(obj, calculated_values):
     Ic4_rms = np.sqrt(Ic4_rms/Ts)
     return Ic4_rms
 
-
-def Fourier(time, function, fo, noc):
-    harmonic_amplitudes = np.zeros(noc)
-    tmax = time[-1]
-    dt = time[2] - time[1]
-    term_base = 2 * np.pi * fo
-    for n in range(1, noc):
-        an = 0
-        bn = 0
-        term = term_base * n
-        for [t, f] in zip(time, function):
-            term2 = term*t
-            an += f*np.cos(term2)
-            bn += f*np.sin(term2)
-        cn = np.sqrt(an**2 + bn**2)*2*dt/tmax
-        harmonic_amplitudes[n] = cn
-    return harmonic_amplitudes
-
-
+# Função que calcula a série de fourier de uma função consistente apenas de segmentos de reta.
 def fourier_piecewise_linear(A, B, Ti, Tf, fo, noc):
     harmonic_amplitudes = np.zeros(noc)
     base = 2 * np.pi * fo
@@ -416,7 +401,7 @@ def fourier_piecewise_linear(A, B, Ti, Tf, fo, noc):
         harmonic_amplitudes[n] = cn
     return harmonic_amplitudes
 
-
+# Função que calcula o valor RMS de uma função consistente apenas de segmentos de reta.
 def rms_piecewise_linear(A, B, Ti, Tf, Ts):
     rms = 0
     for [a, b, ti, tf] in zip(A, B, Ti, Tf):
@@ -425,6 +410,8 @@ def rms_piecewise_linear(A, B, Ti, Tf, Ts):
     return rms
 
 
+'COLOCAR NO ARQUIVO DE COMPONENTES'
+# Funções necessárias para calcular a RCA de uum indutor.
 def f1(delta):
     return (np.sinh(2*delta) + np.sin(2*delta))/(np.cosh(2*delta) - np.cos(2*delta))
 
@@ -442,7 +429,7 @@ def f2(delta):
 #     return 2*obj.transformer.Ratio*Vo/(Ro*(1-Dmin)) - (Po/(2*Vmax)) + (Vmax*Dmin)/(2*Li_lower_bound*frequency_upper_bound)
 
 
-
+'REMOVER DAQUI'
 def rescale(vector, bounds, function=None):
     xmax = max(vector)
     xmin = min(vector)
