@@ -3,7 +3,7 @@ from TestComponents import *
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
 
-print('\nCriando componentes')
+print('Rodando o arquivo Test-GeneticAlgorithm.py')
 
 # Carrega os componentes presentes no arquivo TestComponents.py.
 diodes = [HFA04SD60S, IdealDiode]
@@ -11,6 +11,7 @@ capacitors = [capacitor1, capacitor2, capacitor3, capacitor4]
 switches = [IRFR7740PbF, IdealSwitch]
 cores = [NEE_20, NEE_30_15, NEE_42_20_Ideal, NEE_20_Ideal, NEE_30_15_Ideal, NEE_42_20_Ideal]
 cables = [AWG_23, IdealCable]
+print('\n Componentes Criados')
 
 # Cria a estura responsável por passar os componentes disponível para a busca do GA.
 selected_components = {
@@ -42,7 +43,7 @@ safety_params = {
     'Vd': 1.5,
     'Id': 2.0,
     'Ic': 2.0,
-    'Vs': 1.75,
+    'Vs': 1.2,
     'Is': 2.0,
     'ku': {'Transformer': 0.4, 'EntranceInductor': 0.6, 'AuxiliaryInductor': 0.4}
 }

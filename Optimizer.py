@@ -5,6 +5,8 @@ from Converter.Restrictions import *
 from scipy.optimize import minimize
 
 
+# Class for the genetic optimizer.
+# It initiliazes with the selected_components, and the features of the desired_converter.
 class genetic_optimizer:
 
     def __init__(self, selected_components, design_features, safety_params):
@@ -52,15 +54,14 @@ class genetic_optimizer:
         for n in range(0, 2):
             s.append([])
         for switch in switches:
-            # if switch.Vmax > self.safety_params['Vs'] * max(self.design_features['Vi']['Max']/(1-self.design_features['D']['Min']), self.design_features['Vi']['Min']/(1-self.design_features['D']['Max'])):
-            if True:
+            if switch.Vmax > self.safety_params['Vs'] * max(self.design_features['Vi']['Max']/(1-self.design_features['D']['Min']), self.design_features['Vi']['Min']/(1-self.design_features['D']['Max'])):
                 s[0].append(switch)
                 s[1].append(switch)
         self.Switches = s
 
+    # Generates a boundary_feasible circuit.
+    # Also uses the area feasiblity condition for the inductors and transformer.
     def generate_circuit(self):
-        print("Generated")
-
         bounds_feasible = False
         while not bounds_feasible:
             # Chooses the switches, capacitors and diodes for the circuit.
@@ -128,56 +129,54 @@ class genetic_optimizer:
             )
 
             [_, bounds_feasible] = determine_bounds(new_converter)
-            # new_circuit.summarize()
         return new_converter
 
-    # Ok
+    # Finds the optimal converter for the list of components and design features given.
     def optimize(self, population_size=50, epochs=50, starting_mutation_rate=0.5, mutation_decay_rate = 0.01, minimal_mutation_rate=0.1, crossover_rate=0.5, elitist_rate=0.1, kill_rate=0.1, solution_size=2):
         self.population = []
         self.population_size = population_size
         self.population = self.create_population(population_size)
-        best_loss = self.design_features['Po']*np.zeros(solution_size)
-        solution = np.random.choice(self.population, solution_size)
+        best_losses = self.design_features['Po']*np.zeros(solution_size)
+        solutions = np.random.choice(self.population, solution_size)
 
         mutation_rate = starting_mutation_rate
 
         for epoch in range(0, epochs):
-            [losses, feasible] = self.test_population()                      # Ok
-            [sorted_indexes, best_loss, solution] = self.sort_population_indexes(solution_size, losses, feasible, best_loss, solution)      # Ok
+            losses, feasible = self.test_population()
+            sorted_indexes, best_losses, solutions = self.sort_population_indexes(solution_size, losses, feasible, best_losses, solutions)      # Ok
             elite_indexes = sorted_indexes[0:round(self.population_size * elitist_rate)]
-            self.kill_population(elite_indexes, kill_rate, feasible)                        # Ok
-            self.cross_population(losses, crossover_rate, elite_indexes)                    # Ok
+            self.kill_population(elite_indexes, kill_rate, feasible)
+            self.cross_population(losses, crossover_rate, elite_indexes)
             self.mutate_population(mutation_rate)
+
+            # Updates the mutation rate.
             mutation_rate = mutation_rate - mutation_decay_rate
             if mutation_rate <= minimal_mutation_rate:
                 mutation_rate = minimal_mutation_rate
-        return solution
+        return solutions
 
-    # Ok
+    # Uses the generate converter function to create a population of a given size.
     def create_population(self, population_size):
         population = []
-        print('Creating population')
         for index in range(0, self.population_size):
             population.append(self.generate_circuit())
         return population
 
     # Tests the population and return two arrays, one with the losses and the other with the feasibility.
-    # Ok
     def test_population(self):
         feasible = np.zeros(self.population_size, dtype=np.bool)
         losses = np.zeros(self.population_size)
         for index in range(0, self.population_size):
             circuit = self.population[index]
-            print("Testing individual {}".format(index))
+            # print("Testing individual {}".format(index))
             loss, success = optimize_converter(circuit)
             feasible[index] = success
             losses[index] = loss
-            print("Losses = {} | Feasible = {}".format(loss, success))
+            # print("Losses = {} | Feasible = {}".format(loss, success))
         return [losses, feasible]
 
     # Sorts the population indexes from best to worst. So population[indexes[0]] is the best circuit. It also finds if
     # there is a solution better than the best found so far, and if so, saves this solution
-    # Ok
     def sort_population_indexes(self, solution_size, losses, feasible, best_loss, solution):
         # Sorts the losses
         sorted_indexes = np.zeros(self.population_size, dtype=np.int)
@@ -375,6 +374,7 @@ def determine_bounds(converter):
             (2*converter.transformer.Primary.Penetration_base/converter.transformer.Primary.Cable.Dcu)**2,
             (2*converter.transformer.Secondary.Penetration_base/converter.transformer.Secondary.Cable.Dcu)**2,
             GR/Lk_lower_bound_last,
+            0.04799676724137927*Vo**2/(2*n**2*Po*Lk_lower_bound_last),
             frequency_upper_bound_last
         ]
         frequency_lower_bounds = [
@@ -408,6 +408,7 @@ def determine_bounds(converter):
         ]
         Lk_upper_bounds = [
             GR/frequency_lower_bound,
+            0.04799676724137927*Vo**2/(2*n**2*Po*frequency_lower_bound),
             Lk_upper_bound_last
         ]
         Lk_upper_bound = min(Lk_upper_bounds)

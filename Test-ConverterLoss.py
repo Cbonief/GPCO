@@ -72,6 +72,9 @@ print('O desvio padrão foi de {} s'.format(var))
 
 # Plota o gráfico da perda numa escala mono log X.
 figure()
+
+
+
 axes()
 semilogx(f, lossVec)
 xlabel('Frequência (Hz)')

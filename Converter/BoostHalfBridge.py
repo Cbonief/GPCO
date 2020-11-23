@@ -13,6 +13,7 @@ class BoostHalfBridgeInverter:
             'Max': 1-(self.design_features['Vi']['Min']*transformer.Ratio/self.design_features['Vo']),
             'Min': 1-(self.design_features['Vi']['Max']*transformer.Ratio/self.design_features['Vo'])
         }
+        self.design_features['D']['Expected'] = 1-(self.design_features['Vi']['Nominal']*transformer.Ratio/self.design_features['Vo'])
         self.safety_params = safety_params
 
         self.loss_functions = Losses.loss_function_map
@@ -27,7 +28,7 @@ class BoostHalfBridgeInverter:
 
         self.restriction_functions = []
         for restriction in Restrictions.Restrictions:
-            self.restriction_functions.append({'active': True, 'function': restriction, 'type': 'inequation'})
+            self.restriction_functions.append({'active': True, 'function': restriction})
         
         # Componentes
         self.transformer = transformer
@@ -43,16 +44,9 @@ class BoostHalfBridgeInverter:
         self.last_calculated_loss = None
         self.last_calculated_efficiency = None
         self.calculated_values = {}
-        
-        self.feasibility = False
 
-    """
-    Calculates the total converter loss, iterating to obtain the real efficiency.
-    This iteration is due to the fact that the efficiency actually changes the input current of the converter.
-    :input:
-        X: list containing in order: frequency, Li, Lk.
-    :return: a single float value.
-    """
+    # Calculates the total loss of the converter, and it's efficiency.
+    # Compensates for the fact that some losses depend of the input current.
     def compensated_total_loss(self, X, activation_table=True, get_all=False, override=False):
         if get_all:
             loss_function = self.total_loss_separate
@@ -83,12 +77,7 @@ class BoostHalfBridgeInverter:
                 self.last_calculated_operating_point = X
             return loss
 
-    """
-    Calculates the total_loss of the converter, given a frequency, gap widths and efficiency
-    :input:
-        X: list containing in order: frequency, Li, Lk and the efficiency.
-    :return: a single float value.
-    """
+    # Calculates the total loss of the converter, for a given estimated efficiency.
     def total_loss(self, X, efficiency):
         output = 0
         self.simulate_efficiency_dependent_variables(X, efficiency)
@@ -99,12 +88,7 @@ class BoostHalfBridgeInverter:
                     output = output + partial
         return output
 
-    """
-    Calculates the total_loss of the converter, given a frequency, gap widths and efficiency
-    :input:
-        X: list containing in order: frequency, Li, Lk and the efficiency.
-    :return: a single float value.
-    """
+    # Same as 'total_loss' but returns a dictonary containing all losses.
     def total_loss_separate(self, X, efficiency):
         output = {}
         total = 0
@@ -120,15 +104,7 @@ class BoostHalfBridgeInverter:
         return output
 
 
-    """
-    Calculates all the M constraints and returns them in a M sized vector.
-    The variable first_run guarantees that you only simulate the circuit in this function if the
-    circuit wasn't already simulated in the compensated_total_loss function.
-    This is done to save, so the circuit is only simulated once.
-    :input:
-        X: list containing in order: frequency, Li, Lk and the efficiency.
-    :return: a list containing M floats.
-    """
+    # Calculates all constraints.
     def total_constraint(self, X):
         constraints = []
 
@@ -145,6 +121,8 @@ class BoostHalfBridgeInverter:
             constraints.append(res)
         return constraints
 
+
+    # Calculates all constraints and then the violation, and sums them.
     def total_violation(self, X):
         constraints = self.total_constraint(X)
         violation = 0
@@ -152,52 +130,7 @@ class BoostHalfBridgeInverter:
             violation += max(0, -var)**2
         return violation
 
-    def optimality(self, X):
-        constraints = self.total_constraint(X)
-        slack = 0
-        for var in constraints:
-            slack += max(0, -var)**2
-        return slack+self.last_calculated_loss
-
-    def fitness(self, X):
-        return X
-
-    """return: the feasibility of the circuit as a boolean"""
-    def solution_is_feasible(self):
-        return self.feasibility
-
-    def get_simulated_values(self):
-        return self.calculated_values
-
-    def simulate_efficiency_dependent_variables(self, X, efficiency):
-        # Efficiency dependent.
-        Li = X[1]
-        Iin = (self.design_features['Po'] / (self.design_features['Vi']['Nominal']*efficiency))
-        dIin = self.calculated_values['dIin']
-        Ipk_pos = self.calculated_values['Ipk_pos']
-        Ipk_neg = self.calculated_values['Ipk_neg']
-        Ipk = Iin + (dIin / 2)
-        Imin = Iin - (dIin / 2)
-        Is1max = Ipk_pos - Imin
-        Is2max = Ipk - Ipk_neg
-        BmaxLi = Li*Ipk/(self.entrance_inductor.N*self.entrance_inductor.Core.Ae)
-        aux = {
-            'Ipk': Ipk,
-            'Imin': Imin,
-            'Iin': Iin,
-            'BmaxLi': BmaxLi,
-            'dIin': dIin,
-            'Is1max': Is1max,
-            'Is2max': Is2max
-        }
-        self.calculated_values.update(aux)
-        self.calculated_values['C1Irms'] = Functions.c1_irms(self, self.calculated_values)
-        self.calculated_values['C2Irms'] = Functions.c2_irms(self, self.calculated_values)
-        self.calculated_values['S1Irms'] = Functions.s1_irms(self, self.calculated_values)
-        self.calculated_values['S2Irms'] = Functions.s2_irms(self, self.calculated_values)
-        self.calculated_values['EntranceInductorHarmonics'] = Functions.InputCurrentHarmonics(self, self.calculated_values)
-        self.calculated_values['LiIrms'] = Functions.LiIrms(self, self.calculated_values)
-
+    'SIMULATION'
     def simulate_efficiency_independent_variables(self, X):
         fs = X[0]
         Li = X[1]
@@ -223,9 +156,7 @@ class BoostHalfBridgeInverter:
         }
 
 
-        T = Functions.t3t6(self, calculated_values)
-        t3 = T[0]
-        t6 = T[1]
+        t3, t6, feasibility_flag_t3_t6 = Functions.t3t6(self, calculated_values)
 
         Po = self.design_features['Po']
         Vi = self.design_features['Vi']['Nominal']
@@ -277,6 +208,36 @@ class BoostHalfBridgeInverter:
 
         self.calculated_values = calculated_values
 
+    def simulate_efficiency_dependent_variables(self, X, efficiency):
+        
+        Li = X[1]
+        Iin = (self.design_features['Po'] / (self.design_features['Vi']['Nominal']*efficiency))
+        dIin = self.calculated_values['dIin']
+        Ipk_pos = self.calculated_values['Ipk_pos']
+        Ipk_neg = self.calculated_values['Ipk_neg']
+        Ipk = Iin + (dIin / 2)
+        Imin = Iin - (dIin / 2)
+        Is1max = Ipk_pos - Imin
+        Is2max = Ipk - Ipk_neg
+        BmaxLi = Li*Ipk/(self.entrance_inductor.N*self.entrance_inductor.Core.Ae)
+        aux = {
+            'Ipk': Ipk,
+            'Imin': Imin,
+            'Iin': Iin,
+            'BmaxLi': BmaxLi,
+            'dIin': dIin,
+            'Is1max': Is1max,
+            'Is2max': Is2max
+        }
+        self.calculated_values.update(aux)
+        self.calculated_values['C1Irms'] = Functions.c1_irms(self, self.calculated_values)
+        self.calculated_values['C2Irms'] = Functions.c2_irms(self, self.calculated_values)
+        self.calculated_values['S1Irms'] = Functions.s1_irms(self, self.calculated_values)
+        self.calculated_values['S2Irms'] = Functions.s2_irms(self, self.calculated_values)
+        self.calculated_values['EntranceInductorHarmonics'] = Functions.InputCurrentHarmonics(self, self.calculated_values)
+        self.calculated_values['LiIrms'] = Functions.LiIrms(self, self.calculated_values)
+
+    'AUXILIARY'
     def summarize(self):
         print("\n")
         print("Resumo do Conversor\n")
@@ -406,3 +367,6 @@ class BoostHalfBridgeInverter:
             self.Switches[1] = value
         else:
             raise Exception(name + " is not a defined parameter")
+
+    def get_simulated_values(self):
+        return self.calculated_values

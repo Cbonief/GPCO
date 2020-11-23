@@ -1,13 +1,34 @@
 import numpy as np
 from scipy.optimize import fsolve, root, minimize
+import datetime
+from Converter.fqs import *
 
 # Calcula Vc3, Vc4 e a razão cíclica necessária para obter o valor de Vo desejado.
 def vc3_vc4_d(obj, fs, Lk):
-    x0 = [obj.design_features['Vo'] / 2, obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, (obj.design_features['D']['Min']+obj.design_features['D']['Max'])/2]
+    start = datetime.datetime.now()
+    k = 2*fs*Lk*obj.transformer.Ratio**2/obj.design_features['Ro']
+    b = -obj.design_features['D']['Expected'] - 1
+    c = 2*k + obj.design_features['D']['Expected']
+    d = -2*k
+    e = k
+
+
+    Dlist = single_quartic(1,b,c,d,e)
+    Found = False
+    for D in Dlist:
+        if x.imag == 0:
+            if 0.3 <= D <= 0.7:
+                Dinitial = D
+                Found = True
+
+
+    x0 = [obj.design_features['Vo'] - obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, Dinitial]
     k1 = obj.design_features['Ro'] / (2 * Lk * fs* obj.design_features['Vi']['Nominal'] * (obj.transformer.Ratio ** 3))
     k2 = obj.transformer.Ratio * obj.design_features['Vi']['Nominal']
     solution = fsolve(fvo, x0, args=(k1, k2, obj.design_features['Vo']))
-    return solution
+
+
+    return solution, Found
 
 # Sistema de equações para obter Vc3, Vc4 e D.
 def fvo(X, k1, k2, Vo):
@@ -25,37 +46,41 @@ def vo(obj, fs, Lk, D):
     Vo = Vi*n*Ro*D**2*(1-D)/(n**2*Lk*fs*((2*D-1)**2+1) + D**2*Ro*(1-D)**2)
 
 # Calcula t3 e t6.
-def t3t6(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    Vc4 = calculated_values['Vc4']
-    Vo = calculated_values['Vo']
+def t3t6(obj, values, case='Nominal'):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    Vc4 = values['Vc4']
+    Vo = values['Vo']
 
-    D = calculated_values['D']
-    Vi = obj.design_features['Vi']['Nominal']
+    D = values['D']
+    Vi = obj.design_features['Vi'][case]
 
     n = obj.transformer.Ratio
 
     t3 = Ts * Vc4 * (Vc3 * (D - 1) + Vi * D * n) / (Vi * n * Vo)
     t6 = Ts * (Vi * (Vc4 * D + Vc3)*n + (D - 1) * Vc3 * Vc4) / (Vi * n * Vo)
-    return [t3, t6]
+    feasible_flag = False
+    if 0 <= t3 <= values['Ts'] and 0 < t6 <= values['Ts']:
+        feasible_flag = True
+
+    return [t3, t6, feasible_flag]  
 
 'EQUAÇÕES DE TENSÃO E CORRENTE DOS COMPONENTES'
-def TransformerIRms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    Vc4 = calculated_values['Vc4']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Vc1 = calculated_values['Vc1']
-    Vc2 = calculated_values['Vc2']
-    Ipk_pos_1 = calculated_values['Ipk_pos_1']
-    Ipk_neg_1 = calculated_values['Ipk_neg_1']
+def TransformerIRms(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    Vc4 = values['Vc4']
+    t3 = values['t3']
+    t6 = values['t6']
+    Vc1 = values['Vc1']
+    Vc2 = values['Vc2']
+    Ipk_pos_1 = values['Ipk_pos_1']
+    Ipk_neg_1 = values['Ipk_neg_1']
 
 
-    D = calculated_values['D']
+    D = values['D']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     Ip_rms = t3*Ipk_pos_1**2 - (t3**2)*Ipk_pos_1*((Vc2 + Vc3/n)/Lk) + ((t3**3)/3)*((Vc2 + Vc3/n)/Lk)**2
     Ip_rms = Ip_rms + (((D*Ts)**3)/3)*((Vc4/n - Vc2)/Lk)**2
@@ -66,16 +91,16 @@ def TransformerIRms(obj, calculated_values):
     return [Ip_rms, Is_rms]
 
 
-def AuxiliaryInductorVrms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    Vc4 = calculated_values['Vc4']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Vc1 = calculated_values['Vc1']
-    Vc2 = calculated_values['Vc2']
+def AuxiliaryInductorVrms(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    Vc4 = values['Vc4']
+    t3 = values['t3']
+    t6 = values['t6']
+    Vc1 = values['Vc1']
+    Vc2 = values['Vc2']
 
-    D = calculated_values['D']
+    D = values['D']
     n = obj.transformer.Ratio
     b = [0, 0, 0, 0]
     a = [- (Vc2 + Vc3 / n), (Vc4 / n - Vc2), (Vc4 / n + Vc1), (Vc1 - Vc3 / n)]
@@ -84,20 +109,20 @@ def AuxiliaryInductorVrms(obj, calculated_values):
     return rms_piecewise_linear(a, b, ti, tf, Ts)
 
 
-def TransformerPrimaryCurrentHarmonics(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    Vc4 = calculated_values['Vc4']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Vc1 = calculated_values['Vc1']
-    Vc2 = calculated_values['Vc2']
-    Ipk_pos_1 = calculated_values['Ipk_pos_1']
-    Ipk_neg_1 = calculated_values['Ipk_neg_1']
+def TransformerPrimaryCurrentHarmonics(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    Vc4 = values['Vc4']
+    t3 = values['t3']
+    t6 = values['t6']
+    Vc1 = values['Vc1']
+    Vc2 = values['Vc2']
+    Ipk_pos_1 = values['Ipk_pos_1']
+    Ipk_neg_1 = values['Ipk_neg_1']
 
-    D = calculated_values['D']
+    D = values['D']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     A = [Ipk_pos_1, 0, Ipk_neg_1, 0]
     B = [- (Vc2 + Vc3 / n) / Lk, (Vc4 / n - Vc2) / Lk, (Vc4 / n + Vc1) / Lk, (Vc1 - Vc3 / n) / Lk]
@@ -107,20 +132,20 @@ def TransformerPrimaryCurrentHarmonics(obj, calculated_values):
     harmonics = fourier_piecewise_linear(A, B, Ti, Tf, 1/Ts, 40)
     return harmonics
 
-def TransformerCurrentHarmonics(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    Vc4 = calculated_values['Vc4']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Vc1 = calculated_values['Vc1']
-    Vc2 = calculated_values['Vc2']
-    Ipk_pos_1 = calculated_values['Ipk_pos_1']
-    Ipk_neg_1 = calculated_values['Ipk_neg_1']
+def TransformerCurrentHarmonics(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    Vc4 = values['Vc4']
+    t3 = values['t3']
+    t6 = values['t6']
+    Vc1 = values['Vc1']
+    Vc2 = values['Vc2']
+    Ipk_pos_1 = values['Ipk_pos_1']
+    Ipk_neg_1 = values['Ipk_neg_1']
 
-    D = calculated_values['D']
+    D = values['D']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     A = [Ipk_pos_1, 0, Ipk_neg_1, 0]
     B = [- (Vc2 + Vc3 / n) / Lk, (Vc4 / n - Vc2) / Lk, (Vc4 / n + Vc1) / Lk, (Vc1 - Vc3 / n) / Lk]
@@ -130,13 +155,13 @@ def TransformerCurrentHarmonics(obj, calculated_values):
     harmonics = fourier_piecewise_linear(A, B, Ti, Tf, 1/Ts, 100)
     return harmonics
 
-def LiIrms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    dIin = calculated_values['dIin']
-    Imax = calculated_values['Ipk']
-    Imin = calculated_values['Imin']
+def LiIrms(obj, values):
+    Ts = values['Ts']
+    dIin = values['dIin']
+    Imax = values['Ipk']
+    Imin = values['Imin']
 
-    D = calculated_values['D']
+    D = values['D']
     A = [Imin, Imax]
     B = [dIin, -dIin]
     Tf = [D*Ts, Ts]
@@ -146,13 +171,13 @@ def LiIrms(obj, calculated_values):
     return harmonics
 
 
-def InputCurrentHarmonics(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    dIin = calculated_values['dIin']
-    Imax = calculated_values['Ipk']
-    Imin = calculated_values['Imin']
+def InputCurrentHarmonics(obj, values):
+    Ts = values['Ts']
+    dIin = values['dIin']
+    Imax = values['Ipk']
+    Imin = values['Imin']
 
-    D = calculated_values['D']
+    D = values['D']
     A = [Imin, Imax]
     B = [dIin, -dIin]
     Tf = [D*Ts, Ts]
@@ -162,19 +187,19 @@ def InputCurrentHarmonics(obj, calculated_values):
     return harmonics
 
 
-def c1_irms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    Vc4 = calculated_values['Vc4']
-    t6 = calculated_values['t6']
-    Ipk_neg_1 = calculated_values['Ipk_neg_1']
-    Ipk = calculated_values['Ipk']
-    Li = calculated_values['Li']
+def c1_irms(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    Vc4 = values['Vc4']
+    t6 = values['t6']
+    Ipk_neg_1 = values['Ipk_neg_1']
+    Ipk = values['Ipk']
+    Li = values['Li']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
     dt1 = t6 - D * Ts
     dt2 = Ts - t6
     Vterm1 = Vi * D / (1 - D)
@@ -185,22 +210,22 @@ def c1_irms(obj, calculated_values):
     return Ic1_rms
 
 
-def c2_irms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc1 = calculated_values['Vc1']
-    Vc2 = calculated_values['Vc2']
-    Vc3 = calculated_values['Vc3']
-    Vc4 = calculated_values['Vc4']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Ipk_pos_1 = calculated_values['Ipk_pos_1']
-    Ipk = calculated_values['Ipk']
-    Li = calculated_values['Li']
+def c2_irms(obj, values):
+    Ts = values['Ts']
+    Vc1 = values['Vc1']
+    Vc2 = values['Vc2']
+    Vc3 = values['Vc3']
+    Vc4 = values['Vc4']
+    t3 = values['t3']
+    t6 = values['t6']
+    Ipk_pos_1 = values['Ipk_pos_1']
+    Ipk = values['Ipk']
+    Li = values['Li']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
     dt2 = (D * Ts - t3)
     dt3 = t6 - D*Ts
     dt4 = Ts - t6
@@ -217,19 +242,19 @@ def c2_irms(obj, calculated_values):
     return Ic2_rms
 
 
-def s1_irms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    Vc4 = calculated_values['Vc4']
-    t6 = calculated_values['t6']
-    Ipk_neg_1 = calculated_values['Ipk_neg_1']
-    Ipk = calculated_values['Ipk']
-    Li = calculated_values['Li']
+def s1_irms(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    Vc4 = values['Vc4']
+    t6 = values['t6']
+    Ipk_neg_1 = values['Ipk_neg_1']
+    Ipk = values['Ipk']
+    Li = values['Li']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     Vterm1 = Vi * D / (1 - D)
     Is1_rms = (t6-D*Ts)*(Ipk_neg_1-Ipk)**2 + ((t6-D*Ts)**2)*(Ipk_neg_1-Ipk)*((Vc4/n + Vterm1)/Lk + Vterm1/Li)
@@ -240,19 +265,19 @@ def s1_irms(obj, calculated_values):
     return Is1_rms
 
 
-def s2_irms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    Vc4 = calculated_values['Vc4']
-    t3 = calculated_values['t3']
-    Ipk_pos_1 = calculated_values['Ipk_pos_1']
-    Imin = calculated_values['Imin']
-    Li = calculated_values['Li']
+def s2_irms(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    Vc4 = values['Vc4']
+    t3 = values['t3']
+    Ipk_pos_1 = values['Ipk_pos_1']
+    Imin = values['Imin']
+    Li = values['Li']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     Is2_rms = t3*(Imin - Ipk_pos_1)**2 + (t3**2)*(Imin - Ipk_pos_1)*(Vi/Li + (Vi + Vc3/n)/Lk)
     Is2_rms = Is2_rms + ((t3**3)/3)*(Vi/Li + (Vi + Vc3/n)/Lk)**2
@@ -262,17 +287,17 @@ def s2_irms(obj, calculated_values):
     return Is2_rms
 
 
-def D3Iavg(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Ipk_pos_1 = calculated_values['Ipk_pos_1']
+def D3Iavg(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    t3 = values['t3']
+    t6 = values['t6']
+    Ipk_pos_1 = values['Ipk_pos_1']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     Id3_avg = t3*(Ipk_pos_1/n) - (t3**2)*(Vi + Vc3/n)/(2*n*Lk)
     Id3_avg = Id3_avg + (Vi*D/(1-D) - Vc3/n)*((Ts-t6)**2)/(2*n*Lk)
@@ -280,17 +305,17 @@ def D3Iavg(obj, calculated_values):
     return Id3_avg
 
 
-def D3Irms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Ipk_pos_1 = calculated_values['Ipk_pos_1']
+def D3Irms(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    t3 = values['t3']
+    t6 = values['t6']
+    Ipk_pos_1 = values['Ipk_pos_1']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     Id3_rms = t3*(Ipk_pos_1/n)**2 - ((t3/n)**2)*Ipk_pos_1*(Vi + Vc3/n)/Lk + (t3**3)*(((Vi + Vc3/n)/(n*Lk))**2)/3
     Id3_rms = Id3_rms + ((Ts-t6)**3)*(((Vi*D/(1-D) - Vc3/n)/(n*Lk))**2)/3
@@ -298,17 +323,17 @@ def D3Irms(obj, calculated_values):
     return Id3_rms
 
 
-def D4Iavg(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc4 = calculated_values['Vc4']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Ipk_neg_1 = calculated_values['Ipk_neg_1']
+def D4Iavg(obj, values):
+    Ts = values['Ts']
+    Vc4 = values['Vc4']
+    t3 = values['t3']
+    t6 = values['t6']
+    Ipk_neg_1 = values['Ipk_neg_1']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     Id4_avg = -(t6-D*Ts)*(Ipk_neg_1/n) - ((t6-D*Ts)**2)*(Vi*D/(1-D) + Vc4/n)/(2*n*Lk)
     Id4_avg = Id4_avg - (-Vi + Vc4/n)*((D*Ts-t3)**2)/(2*n*Lk)
@@ -316,17 +341,17 @@ def D4Iavg(obj, calculated_values):
     return Id4_avg
 
 
-def D4Irms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc4 = calculated_values['Vc4']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Ipk_neg_1 = calculated_values['Ipk_neg_1']
+def D4Irms(obj, values):
+    Ts = values['Ts']
+    Vc4 = values['Vc4']
+    t3 = values['t3']
+    t6 = values['t6']
+    Ipk_neg_1 = values['Ipk_neg_1']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     Id4_rms = ((D*Ts-t3)**3)*(((Vc4/n - Vi)/(Lk*n))**2)/3 + (t6-D*Ts)*(Ipk_neg_1/n)**2
     Id4_rms = Id4_rms + (Ipk_neg_1/Lk)*(Vc4/n + Vi*D/(1-D))*((t6-D*Ts)/n)**2
@@ -335,18 +360,18 @@ def D4Irms(obj, calculated_values):
     return Id4_rms
 
 
-def C3Irms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc3 = calculated_values['Vc3']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Ipk_pos_1 = calculated_values['Ipk_pos_1']
-    Io = calculated_values['Io']
+def C3Irms(obj, values):
+    Ts = values['Ts']
+    Vc3 = values['Vc3']
+    t3 = values['t3']
+    t6 = values['t6']
+    Ipk_pos_1 = values['Ipk_pos_1']
+    Io = values['Io']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     Ic3_rms = t3*(Ipk_pos_1/n - Io)**2 - (t3**2)*(Ipk_pos_1/n - Io)*((Vi + Vc3/n)/(n*Lk))
     Ic3_rms = Ic3_rms + (t3**3)*(((Vi + Vc3/n)/(n*Lk))**2)/3
@@ -356,18 +381,18 @@ def C3Irms(obj, calculated_values):
     return Ic3_rms
 
 
-def C4Irms(obj, calculated_values):
-    Ts = calculated_values['Ts']
-    Vc4 = calculated_values['Vc4']
-    t3 = calculated_values['t3']
-    t6 = calculated_values['t6']
-    Ipk_neg_1 = calculated_values['Ipk_neg_1']
-    Io = calculated_values['Io']
+def C4Irms(obj, values):
+    Ts = values['Ts']
+    Vc4 = values['Vc4']
+    t3 = values['t3']
+    t6 = values['t6']
+    Ipk_neg_1 = values['Ipk_neg_1']
+    Io = values['Io']
 
-    D = calculated_values['D']
+    D = values['D']
     Vi = obj.design_features['Vi']['Nominal']
     n = obj.transformer.Ratio
-    Lk = calculated_values['Lk']
+    Lk = values['Lk']
 
     Ic4_rms = (Ts*(1+D) - t6)*Io**2 + Io*((Vc4/n - Vi)/(n*Lk))*(D*Ts-t3)**2
     Ic4_rms = Ic4_rms + ((D*Ts-t3)**3)*(((Vc4/n - Vi)/(n*Lk))**2)/3
@@ -408,16 +433,6 @@ def rms_piecewise_linear(A, B, Ti, Tf, Ts):
         rms += (tf - ti)*(a - b*ti)**2 + (tf**2 - ti**2)*(a-b*ti)*b + (tf**3 - ti**3)*(b**2)/3
     rms = np.sqrt(rms/Ts)
     return rms
-
-
-'COLOCAR NO ARQUIVO DE COMPONENTES'
-# Funções necessárias para calcular a RCA de uum indutor.
-def f1(delta):
-    return (np.sinh(2*delta) + np.sin(2*delta))/(np.cosh(2*delta) - np.cos(2*delta))
-
-
-def f2(delta):
-    return (np.sinh(delta) - np.sin(delta))/(np.cosh(delta) + np.cos(delta))
 
 
 # def iZVS2(obj, f, Li):

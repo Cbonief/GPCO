@@ -1,5 +1,4 @@
 import numpy as np
-from Converter import auxiliary_functions as af
 
 uo = 4*np.pi*1e-7
 
@@ -114,7 +113,7 @@ class Inductor(Component):
                 ratio = 1
             else:
                 a = self.A_base * np.sqrt(n*fo)
-                ratio = a*(af.f1(a) + (2/3)*((self.NC**2 - 1))*af.f2(a))
+                ratio = a*(f1(a) + (2/3)*((self.NC**2 - 1))*f2(a))
             self.rca[n] = ratio * self.rcc
 
     def get_rca(self, n):
@@ -205,3 +204,12 @@ class Transformer(Component):
                     self.set_parameter(name, (self.Core.Aw*ku - self.Secondary.used_area)/(self.Primary.N*self.Primary.Cable.S))
                 elif name == 'Nconds':
                     self.set_parameter(name, (self.Core.Aw * ku - self.Primary.used_area) / (self.Secondary.N * self.Secondary.Cable.S))
+
+
+
+# Funções auxiliares necessárias para calcular a RCA de um indutor.
+def f1(delta):
+    return (np.sinh(2*delta) + np.sin(2*delta))/(np.cosh(2*delta) - np.cos(2*delta))
+
+def f2(delta):
+    return (np.sinh(delta) - np.sin(delta))/(np.cosh(delta) + np.cos(delta))
