@@ -45,7 +45,7 @@ def load_switch(filename):
             param[variable_name] = float(value)
         else:
             component_name = value
-    new_switch = Switch(param["Ton"], param["Toff"], param["Rd"])
+    new_switch = Switch(param["Ton"], param["Toff"], param["Rd"], param['Cds'])
     return [new_switch, component_name]
 
 

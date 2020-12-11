@@ -337,7 +337,6 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100
         for constraint in constraints:
             if constraint <= 0:
                 found_point = False
-    print("Found a feasible point")
     if return_bounds:
         return [feasible_point, bounds]
     else:

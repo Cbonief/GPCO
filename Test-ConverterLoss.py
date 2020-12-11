@@ -54,7 +54,7 @@ t = np.zeros(number_of_points)
 mean_time = 0
 for n in range(0, number_of_points):
     start = time.time() 
-    lossVec[n] = converter.compensated_total_loss([f[n], 2.562e-4, 1e-6], get_all=False)
+    lossVec[n] = converter.compensated_total_loss([f[n], 2.562e-4, 1e-6])
     end = time.time()
     t[n] = end - start
     mean_time += t[n]
