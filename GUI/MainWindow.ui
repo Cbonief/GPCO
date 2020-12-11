@@ -8,7 +8,7 @@
     <x>0</x>
     <y>0</y>
     <width>1080</width>
-    <height>800</height>
+    <height>801</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -42,8 +42,8 @@
    <widget class="MplWidget" name="graphWidget" native="true">
     <property name="geometry">
      <rect>
-      <x>780</x>
-      <y>370</y>
+      <x>340</x>
+      <y>100</y>
       <width>360</width>
       <height>280</height>
      </rect>
@@ -54,6 +54,28 @@
       <height>280</height>
      </size>
     </property>
+    <widget class="QLabel" name="label_4">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>351</width>
+       <height>211</height>
+      </rect>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap>../../UDESC/2020 - Corona Vírus/Relatório 6 - Boost Bridgeless/Boost Half Bridge.png</pixmap>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
@@ -894,7 +916,7 @@
      <item>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
@@ -1919,8 +1941,8 @@
    <widget class="QPushButton" name="optimize_button">
     <property name="geometry">
      <rect>
-      <x>920</x>
-      <y>340</y>
+      <x>130</x>
+      <y>740</y>
       <width>75</width>
       <height>23</height>
      </rect>
@@ -1929,27 +1951,119 @@
      <string>Otimizar</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_4">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
+   <widget class="MplWidget" name="graphWidget_2" native="true">
     <property name="geometry">
      <rect>
-      <x>350</x>
-      <y>20</y>
-      <width>521</width>
-      <height>211</height>
+      <x>340</x>
+      <y>430</y>
+      <width>360</width>
+      <height>280</height>
      </rect>
     </property>
-    <property name="autoFillBackground">
-     <bool>false</bool>
+    <property name="minimumSize">
+     <size>
+      <width>360</width>
+      <height>280</height>
+     </size>
     </property>
-    <property name="text">
-     <string/>
+    <widget class="QLabel" name="label_5">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>351</width>
+       <height>211</height>
+      </rect>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap>../../UDESC/2020 - Corona Vírus/Relatório 6 - Boost Bridgeless/Boost Half Bridge.png</pixmap>
+     </property>
+    </widget>
+   </widget>
+   <widget class="MplWidget" name="graphWidget_3" native="true">
+    <property name="geometry">
+     <rect>
+      <x>710</x>
+      <y>100</y>
+      <width>360</width>
+      <height>280</height>
+     </rect>
     </property>
-    <property name="pixmap">
-     <pixmap>../../UDESC/2020 - Corona Vírus/Relatório 6 - Boost Bridgeless/Boost Half Bridge.png</pixmap>
+    <property name="minimumSize">
+     <size>
+      <width>360</width>
+      <height>280</height>
+     </size>
     </property>
+    <widget class="QLabel" name="label_6">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>521</width>
+       <height>211</height>
+      </rect>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap>../../UDESC/2020 - Corona Vírus/Relatório 6 - Boost Bridgeless/Boost Half Bridge.png</pixmap>
+     </property>
+    </widget>
+   </widget>
+   <widget class="MplWidget" name="graphWidget_4" native="true">
+    <property name="geometry">
+     <rect>
+      <x>710</x>
+      <y>430</y>
+      <width>360</width>
+      <height>280</height>
+     </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>360</width>
+      <height>280</height>
+     </size>
+    </property>
+    <widget class="QLabel" name="label_7">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>521</width>
+       <height>211</height>
+      </rect>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap>../../UDESC/2020 - Corona Vírus/Relatório 6 - Boost Bridgeless/Boost Half Bridge.png</pixmap>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

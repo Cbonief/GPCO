@@ -1,10 +1,7 @@
-def fun (a,b,c,d):
-	print(a)
-	print(b)
-	print(c)
-	print(d)
-x = (100,200,300,400)
+import numpy as np
 
-fun(*x)
-y = {'a':'I', 'b':'like','c':'python','d':'programming'}
-fun(**y)
+x = np.e
+
+for i in range(0, 100):
+	print(np.floor(x))
+	x = np.floor(x)*(x-np.floor(x)+1)

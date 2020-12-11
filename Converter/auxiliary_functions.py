@@ -16,17 +16,16 @@ def vc3_vc4_d(obj, fs, Lk):
     Dlist = single_quartic(1,b,c,d,e)
     Found = False
     for D in Dlist:
-        if x.imag == 0:
-            if 0.3 <= D <= 0.7:
-                Dinitial = D
+        if D.imag == 0:
+            if 0.3 <= D.real <= 0.7:
+                Dinitial = D.real
                 Found = True
 
-
-    x0 = [obj.design_features['Vo'] - obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, Dinitial]
-    k1 = obj.design_features['Ro'] / (2 * Lk * fs* obj.design_features['Vi']['Nominal'] * (obj.transformer.Ratio ** 3))
-    k2 = obj.transformer.Ratio * obj.design_features['Vi']['Nominal']
-    solution = fsolve(fvo, x0, args=(k1, k2, obj.design_features['Vo']))
-
+    if Found:
+        x0 = [obj.design_features['Vo'] - obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, Dinitial]
+        k1 = obj.design_features['Ro'] / (2 * Lk * fs* obj.design_features['Vi']['Nominal'] * (obj.transformer.Ratio ** 3))
+        k2 = obj.transformer.Ratio * obj.design_features['Vi']['Nominal']
+        solution = fsolve(fvo, x0, args=(k1, k2, obj.design_features['Vo']))
 
     return solution, Found
 
@@ -44,6 +43,7 @@ def vo(obj, fs, Lk, D):
     Ro = obj.design_features['Ro']
     
     Vo = Vi*n*Ro*D**2*(1-D)/(n**2*Lk*fs*((2*D-1)**2+1) + D**2*Ro*(1-D)**2)
+    return Vo
 
 # Calcula t3 e t6.
 def t3t6(obj, values, case='Nominal'):
@@ -63,7 +63,7 @@ def t3t6(obj, values, case='Nominal'):
     if 0 <= t3 <= values['Ts'] and 0 < t6 <= values['Ts']:
         feasible_flag = True
 
-    return [t3, t6, feasible_flag]  
+    return t3, t6, feasible_flag
 
 'EQUAÇÕES DE TENSÃO E CORRENTE DOS COMPONENTES'
 def TransformerIRms(obj, values):
