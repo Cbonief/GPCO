@@ -3,6 +3,7 @@ import Converter.Losses as Losses
 import Converter.auxiliary_functions as Functions
 import numpy as np
 import math
+from scipy.spatial import distance
 
 
 class BoostHalfBridgeInverter:
@@ -45,18 +46,39 @@ class BoostHalfBridgeInverter:
         self.last_calculated_efficiency = None
         self.calculated_values = {}
 
+        self.unfeasible_operating_points = []
+        self.operating_points_scale = []
+        self.number_of_unfeasible_points = 0
+
+
+    def unfeasible_points_barrier(self, X):
+        var = 0
+        for point in self.unfeasible_operating_points:
+            point = np.divide(point, self.operating_points_scale)
+            var += 1/(2*(distance.euclidean(point, X)))
+        return var
+
+    def add_unfeasible_point(self, X):
+        if X not in self.unfeasible_operating_points:
+            self.unfeasible_operating_points.append(X)
+            self.number_of_unfeasible_points += 1
+            scale = [0,0,0]
+            for point in self.unfeasible_operating_points:
+                scale[0] += point[0]
+                scale[1] += point[1]
+                scale[2] += point[2]
+            self.operating_points_scale = scale/self.number_of_unfeasible_points
+
     # Calculates the total loss of the converter, and it's efficiency.
     # Compensates for the fact that some losses depend of the input current.
-    def compensated_total_loss(self, X, activation_table=True, override=False, get_feasibility=False):
+    def compensated_total_loss_with_barrier(self, X, activation_table=True, override=False):
         if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
-            return self.last_calculated_loss
+            return self.last_calculated_loss+self.unfeasible_points_barrier(X)
         else:
             feasible = self.simulate_efficiency_independent_variables(X)
             if not feasible:
-                if get_feasibility:
-                    return self.design_features['Po']*10, False
-                else:
-                    return self.design_features['Po']*10
+                self.add_unfeasible_point(X)
+                return self.unfeasible_points_barrier(X)
             efficiency = 0.8
             loss = self.design_features['Po'] * (1 - efficiency) / efficiency
             error = 2
@@ -66,18 +88,66 @@ class BoostHalfBridgeInverter:
                 efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
                 error = abs(loss_last - loss)
             if math.isnan(loss) or math.isinf(loss):
-                if get_feasibility:
-                    return self.design_features['Po']*10, False
-                else:
-                    return self.design_features['Po']*10
+                self.add_unfeasible_point(X)
+                return self.unfeasible_points_barrier(X)
             else:
                 self.last_calculated_loss = loss
                 self.last_calculated_efficiency = efficiency
                 self.last_calculated_operating_point = X
-            if get_feasibility:
-                return loss, True
+                return loss+self.unfeasible_points_barrier(X)
+
+    # Calculates the total loss of the converter, and it's efficiency.
+    # Compensates for the fact that some losses depend of the input current.
+    def compensated_total_loss_with_barrier_and_feasibility(self, X, activation_table=True, override=False):
+        if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
+            return self.last_calculated_loss+self.unfeasible_points_barrier(X)
+        else:
+            feasible = self.simulate_efficiency_independent_variables(X)
+            if not feasible:
+                self.add_unfeasible_point(X)
+                return self.unfeasible_points_barrier(X), False
+            efficiency = 0.8
+            loss = self.design_features['Po'] * (1 - efficiency) / efficiency
+            error = 2
+            while error > 0.01:
+                loss_last = loss
+                loss = self.total_loss(X, efficiency)
+                efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
+                error = abs(loss_last - loss)
+            if math.isnan(loss) or math.isinf(loss):
+                self.add_unfeasible_point(X)
+                return self.unfeasible_points_barrier(X), False
             else:
-                return loss
+                self.last_calculated_loss = loss
+                self.last_calculated_efficiency = efficiency
+                self.last_calculated_operating_point = X
+                return loss+self.unfeasible_points_barrier(X), True
+
+
+    # Calculates the total loss of the converter, and it's efficiency.
+    # Compensates for the fact that some losses depend of the input current.
+    def compensated_total_loss_with_feasibility(self, X, activation_table=True, override=False):
+        if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
+            return self.last_calculated_loss
+        else:
+            feasible = self.simulate_efficiency_independent_variables(X)
+            if not feasible:
+                return 0, False
+            efficiency = 0.8
+            loss = self.design_features['Po'] * (1 - efficiency) / efficiency
+            error = 2
+            while error > 0.01:
+                loss_last = loss
+                loss = self.total_loss(X, efficiency)
+                efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
+                error = abs(loss_last - loss)
+            if math.isnan(loss) or math.isinf(loss):
+                return 0, False
+            else:
+                self.last_calculated_loss = loss
+                self.last_calculated_efficiency = efficiency
+                self.last_calculated_operating_point = X
+                return loss, True
 
     # Calculates the total loss of the converter, and it's efficiency.
     # Compensates for the fact that some losses depend of the input current.
@@ -177,6 +247,7 @@ class BoostHalfBridgeInverter:
             'D': D
         }
 
+        feasibility_flag_t3_t6 = False
         if feasiblity_flag_D:
             t3, t6, feasibility_flag_t3_t6 = Functions.t3t6(self, calculated_values)
 
@@ -229,7 +300,7 @@ class BoostHalfBridgeInverter:
         calculated_values['BmaxLk'] = LkVrms/(self.auxiliary_inductor.Core.Ae*fs*7*self.auxiliary_inductor.N)
 
         self.calculated_values = calculated_values
-        return feasiblity_flag_D*feasibility_flag_t3_t6
+        return (feasiblity_flag_D and feasibility_flag_t3_t6)
 
     def simulate_efficiency_dependent_variables(self, X, efficiency):
         
