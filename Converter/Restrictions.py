@@ -30,12 +30,12 @@ def bmax_Lk(obj, X):
 
 
 def AeAw_Lk(obj, X):
-    res = obj.auxiliary_inductor.Core.AeAw - obj.calculated_values['TransformerIrms'][0]*obj.entrance_inductor.Ncond*obj.auxiliary_inductor.Cable.S/(obj.design_features['Jmax']*obj.safety_params['ku']['AuxiliaryInductor'])
+    res = obj.auxiliary_inductor.Core.AeAw - obj.calculated_values['TransformerIrms']*obj.entrance_inductor.Ncond*obj.auxiliary_inductor.Cable.S/(obj.design_features['Jmax']*obj.safety_params['ku']['AuxiliaryInductor'])
     return res
 
 
 def JLk(obj, X):
-    res = obj.design_features['Jmax'] - obj.calculated_values['TransformerIrms'][0]/(obj.auxiliary_inductor.Cable.Scu*obj.auxiliary_inductor.Ncond)
+    res = obj.design_features['Jmax'] - obj.calculated_values['TransformerIrms']/(obj.auxiliary_inductor.Cable.Scu*obj.auxiliary_inductor.Ncond)
     return res
 
 def ZVS_restriction(converter, X):
@@ -55,7 +55,6 @@ def ZVS_restriction(converter, X):
     return res
 
 #TransformerRestrictions = [Transformer_Core_Loss, Transformer_Cable_Loss]
-# entrance_inductorRestrictions = [dIin_max, pen_indutor_Li, bmax_Li, AeAw_Li, JLi]
 EntranceInductorRestrictions = [dIin_max, bmax_Li, AeAw_Li]
 AuxiliaryInductorRestrictions = [bmax_Lk, AeAw_Lk, JLk, ZVS_restriction]
 # , AeAw_Lk, JLk
@@ -65,7 +64,7 @@ AuxiliaryInductorRestrictions = [bmax_Lk, AeAw_Lk, JLk, ZVS_restriction]
 
 Restrictions = []
 Restrictions.extend(EntranceInductorRestrictions)
-# Restrictions.extend(AuxiliaryInductorRestrictions)
+Restrictions.extend(AuxiliaryInductorRestrictions)
 
 
 def Lk_restriction_s1(converter, Vi, D, L, fs):

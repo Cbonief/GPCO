@@ -167,9 +167,8 @@ class genetic_optimizer:
         feasible = np.zeros(self.population_size, dtype=np.bool)
         losses = np.zeros(self.population_size)
         for index in range(0, self.population_size):
-            circuit = self.population[index]
             # print("Testing individual {}".format(index))
-            loss, success = optimize_converter(circuit)
+            loss, success = optimize_converter(self.population[index])
             feasible[index] = success
             losses[index] = loss
             # print("Losses = {} | Feasible = {}".format(loss, success))
@@ -288,7 +287,7 @@ def optimize_converter(converter, subroutine_iteration= 100, epochs=10, algorith
         for i in range(0, epochs):
             x0 = find_feasible_point(converter, bounds)
             solution = minimize(
-                converter.compensated_total_loss,
+                converter.compensated_total_loss_with_barrier,
                 x0,
                 method=algorithm,
                 bounds = bounds,
@@ -296,13 +295,11 @@ def optimize_converter(converter, subroutine_iteration= 100, epochs=10, algorith
                 options={'maxiter': subroutine_iteration, 'disp': False},
                 constraints={'fun': converter.total_constraint, 'type':'ineq'}
             )
-            print("Loss = {}".format(solution.fun))
             if solution.fun < best and solution.success:
                 best = solution.fun
                 result = solution
-                print("Solution beaten")
         if result:
-            return [best, result.success]
+            return [result, result.success]
         else:
             return [1000, False]
     else:
@@ -384,6 +381,7 @@ def determine_bounds(converter):
             0.5*max(Vmin**2*Dmax, Vmax**2*Dmin)/(Po*converter.design_features['dIin_max']*Li_upper_bound_last),
             frequency_lower_bound_last
         ]
+        print(frequency_lower_bounds)
         frequency_lower_bound = max(frequency_lower_bounds)
         frequency_upper_bound = min(frequency_upper_bounds)
 
@@ -406,8 +404,8 @@ def determine_bounds(converter):
             Lk_lower_bound_last
         ]
         Lk_upper_bounds = [
-            GR/frequency_lower_bound,
-            0.04799676724137927*Vo**2/(2*n**2*Po*frequency_lower_bound),
+            ##GR/frequency_lower_bound,
+            ##0.04799676724137927*Vo**2/(2*n**2*Po*frequency_lower_bound),
             Lk_upper_bound_last
         ]
         Lk_upper_bound = min(Lk_upper_bounds)

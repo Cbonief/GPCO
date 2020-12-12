@@ -1,4 +1,4 @@
 Name: C1
-C: 2
+C: 125e-6
 Rse: 11.33e-3
 Vmax: 80

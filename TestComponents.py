@@ -25,10 +25,10 @@ HFA04SD60S = Diode(1.5, 0, 620, Name='HFA04SD60S')
 IdealDiode = Diode(0.5, 0, 620, Name='IdealDiode')
 
 # Cria os capacitores.
-capacitor1 = Capacitor(2, 31e-3 / 3, 55, Name='C1')
-capacitor2 = Capacitor(2, 30e-4, 55, Name='C2')
-capacitor3 = Capacitor(2, 550e-3, 450, Name='C3')
-capacitor4 = Capacitor(2, 250e-3, 450, Name='C4')
+capacitor1 = Capacitor(3*125e-6, 31e-3 / 3, 55, Name='C1')
+capacitor2 = Capacitor(10*330e-6, 30e-4, 55, Name='C2')
+capacitor3 = Capacitor(125e-6, 550e-3, 450, Name='C3')
+capacitor4 = Capacitor(330e-6, 250e-3, 450, Name='C4')
 
 diodes = [HFA04SD60S, HFA04SD60S]
 capacitors = [capacitor1, capacitor2, capacitor3, capacitor4]

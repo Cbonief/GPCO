@@ -199,28 +199,23 @@ class BoostHalfBridgeInverter:
 
         # Garantees that the constrains are only calculated if the circuit has been simulated.
         if not np.prod(X == self.last_calculated_operating_point, dtype=bool):
-            loss, feasible = self.compensated_total_loss(X, get_feasibility=True)
+            loss = self.compensated_total_loss_with_barrier(X)
         for restriction in self.restriction_functions:
             func = restriction['function']
-            if not feasible:
-                res = -10
-            else:
-                res = func(self, X)
-                if math.isnan(res) or math.isinf(res):
-                    res=-10
+            res = func(self, X)
+            if math.isnan(res) or math.isinf(res):
+                res=-10
             constraints.append(res)
-        return constraints, feasiblity_flag
+        return constraints
 
 
     # Calculates all constraints and then the violation, and sums them.
     def total_violation(self, X):
-        constraints, feasible = self.total_constraint(X)
-        if not feasible:
-            return None, False
+        constraints = self.total_constraint(X)
         violation = 0
         for var in constraints:
             violation += max(0, -var)**2
-        return violation, True
+        return violation
 
     'SIMULATION'
     def simulate_efficiency_independent_variables(self, X):
