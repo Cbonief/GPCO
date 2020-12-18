@@ -6,7 +6,10 @@ from Converter.fqs import *
 # Calcula Vc3, Vc4 e a razão cíclica necessária para obter o valor de Vo desejado.
 def vc3_vc4_d(obj, fs, Lk):
     start = datetime.datetime.now()
-    k = 2*fs*Lk*obj.transformer.Ratio**2/obj.design_features['Ro']
+    Vi = obj.design_features['Vi']['Nominal']
+    n = obj.transformer.Ratio
+    Ro = obj.design_features['Ro']
+    k = 2*fs*Lk*n**2/Ro
     b = -obj.design_features['D']['Expected'] - 1
     c = 2*k + obj.design_features['D']['Expected']
     d = -2*k
@@ -15,21 +18,18 @@ def vc3_vc4_d(obj, fs, Lk):
 
     Dlist = single_quartic(1,b,c,d,e)
     Found = False
-    for D in Dlist:
-        if D.imag == 0:
-            if 0.3 <= D.real <= 0.7:
-                Dinitial = D.real
+    for dVal in Dlist:
+        if dVal.imag == 0:
+            if 0.3 <= dVal.real <= 0.7:
+                D = dVal.real
                 Found = True
-
-    solution = np.zeros(3)
-    if Found:
-        x0 = [obj.design_features['Vo'] - obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, Dinitial]
-        k1 = obj.design_features['Ro'] / (2 * Lk * fs* obj.design_features['Vi']['Nominal'] * (obj.transformer.Ratio ** 3))
-        k2 = obj.transformer.Ratio * obj.design_features['Vi']['Nominal']
-        solution = fsolve(fvo, x0, args=(k1, k2, obj.design_features['Vo']))
-        Found = False
-        if 0 < solution[0] < obj.design_features['Vo'] and 0 < solution[1] < obj.design_features['Vo'] and 0.3 < solution[2] <= 0.7:
-            Found = True
+    if not Found:
+        return [0,0,0], False
+    else:
+        Vc3 = n*(D*Vi/(1-D) - 2*n*Lk*fs/(Ro*D**2))
+        Vc4 = n*(Vi - 2*n*Lk*fs/(Ro*(1-D)**2))
+        solution = [Vc3, Vc4, D]
+        print(solution)
     return solution, Found
 
 # Sistema de equações para obter Vc3, Vc4 e D.
