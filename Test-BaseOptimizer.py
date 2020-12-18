@@ -24,8 +24,8 @@ design_features = {
     'Bmax': {'Transformer': 0.15, 'EntranceInductor': 0.3, 'AuxiliaryInductor': 0.15},
     'dIin_max': 0.2,
     'dVo_max': 0.02,
-    'dVc1': 0.02,
-    'dVc2': 0.02,
+    'dVc1': 0.10,
+    'dVc2': 0.10,
     'Jmax': 450*1e4
 }
 

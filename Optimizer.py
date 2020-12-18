@@ -341,10 +341,8 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100
 
 
 def determine_bounds(converter):
-    Dmin = converter.design_features['D']['Min']
-    Dmax = converter.design_features['D']['Max']
-    Vmin = converter.design_features['Vi']['Min']
-    Vmax = converter.design_features['Vi']['Max']
+    Dnominal = converter.design_features['D']['Expected']
+    Vnominal = converter.design_features['Vi']['Nominal']
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
     Ro = converter.design_features['Ro']
@@ -373,39 +371,36 @@ def determine_bounds(converter):
             0.04799676724137927*Vo**2/(2*n**2*Po*Lk_lower_bound_last),
             frequency_upper_bound_last
         ]
+        print(frequency_upper_bounds)
         frequency_lower_bounds = [
-            max(((1-Dmin)**2)/(Vmax*Dmin), ((1-Dmax)**2)/(Vmin*Dmax))*Po/(4*converter.capacitors[0].C*converter.design_features['dVc1']),
-            max((1-Dmax)/Vmin**2, (1-Dmin)/Vmax**2)*Po/(converter.capacitors[1].C*converter.design_features['dVc2']),
-            Dmax*Po/(converter.capacitors[2].C*converter.design_features['dVo_max']*Vo**2),
-            (1-Dmin)*Po/(converter.capacitors[3].C*converter.design_features['dVo_max']*Vo**2),
-            0.5*max(Vmin**2*Dmax, Vmax**2*Dmin)/(Po*converter.design_features['dIin_max']*Li_upper_bound_last),
+            (((1-Dnominal)**2)/(Vnominal**2*Dnominal))*Po/(4*converter.capacitors[0].C*converter.design_features['dVc1']),
+            ((1-Dnominal)/Vnominal**2)*Po/(converter.capacitors[1].C*converter.design_features['dVc2']),
+            Dnominal*Po/(converter.capacitors[2].C*converter.design_features['dVo_max']*Vo**2),
+            (1-Dnominal)*Po/(converter.capacitors[3].C*converter.design_features['dVo_max']*Vo**2),
             frequency_lower_bound_last
         ]
-        print(frequency_lower_bounds)
         frequency_lower_bound = max(frequency_lower_bounds)
         frequency_upper_bound = min(frequency_upper_bounds)
 
         # Entrance inductance bounds.
         Li_lower_bounds = [
-            0.5*max(Vmin**2*Dmax, Vmax**2*Dmin)/(Po*converter.design_features['dIin_max']*frequency_upper_bound),
             Li_lower_bound_last
         ]
         Li_upper_bounds = [
-            (Vmax/Po)*(converter.design_features['Bmax']['EntranceInductor']*converter.entrance_inductor.N*converter.entrance_inductor.Core.Ae - (Vmax*Dmin/(2*frequency_upper_bound))),
-            (Vmin/Po)*(converter.design_features['Bmax']['EntranceInductor']*converter.entrance_inductor.N*converter.entrance_inductor.Core.Ae - (Vmin*Dmax/(2*frequency_upper_bound))),
+            2*Vnominal*converter.design_features['Bmax']['EntranceInductor']*converter.entrance_inductor.N*converter.entrance_inductor.Core.Ae/(Po*(1+converter.design_features['dIin_max'])),
             Li_upper_bound_last
         ]
         Li_lower_bound = max(Li_lower_bounds)
         Li_upper_bound = min(Li_upper_bounds)
 
         Lk_lower_bounds = [
-            max(Lk_restriction_s1(converter, Vmin, Dmax, Li_upper_bound, frequency_upper_bound), Lk_restriction_s1(converter, Vmax, Dmin, Li_upper_bound, frequency_upper_bound)),
-            max(Lk_restriction_s2(converter, Vmin, Dmax, Li_upper_bound, frequency_upper_bound), Lk_restriction_s2(converter, Vmax, Dmin, Li_upper_bound, frequency_upper_bound)),
+            Lk_restriction_s1(converter, Vnominal, Dnominal, Li_upper_bound, frequency_upper_bound),
+            Lk_restriction_s2(converter, Vnominal, Dnominal, Li_upper_bound, frequency_upper_bound),
             Lk_lower_bound_last
         ]
         Lk_upper_bounds = [
-            ##GR/frequency_lower_bound,
-            ##0.04799676724137927*Vo**2/(2*n**2*Po*frequency_lower_bound),
+            GR/frequency_lower_bound,
+            0.04799676724137927*Vo**2/(2*n**2*Po*frequency_lower_bound),
             Lk_upper_bound_last
         ]
         Lk_upper_bound = min(Lk_upper_bounds)

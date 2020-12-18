@@ -21,12 +21,15 @@ def vc3_vc4_d(obj, fs, Lk):
                 Dinitial = D.real
                 Found = True
 
+    solution = np.zeros(3)
     if Found:
         x0 = [obj.design_features['Vo'] - obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, obj.transformer.Ratio*obj.design_features['Vi']['Nominal'] - 1, Dinitial]
         k1 = obj.design_features['Ro'] / (2 * Lk * fs* obj.design_features['Vi']['Nominal'] * (obj.transformer.Ratio ** 3))
         k2 = obj.transformer.Ratio * obj.design_features['Vi']['Nominal']
         solution = fsolve(fvo, x0, args=(k1, k2, obj.design_features['Vo']))
-
+        Found = False
+        if 0 < solution[0] < obj.design_features['Vo'] and 0 < solution[1] < obj.design_features['Vo'] and 0.3 < solution[2] <= 0.7:
+            Found = True
     return solution, Found
 
 # Sistema de equações para obter Vc3, Vc4 e D.
