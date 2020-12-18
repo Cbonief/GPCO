@@ -71,6 +71,29 @@ class BoostHalfBridgeInverter:
 
     # Calculates the total loss of the converter, and it's efficiency.
     # Compensates for the fact that some losses depend of the input current.
+    def compensated_total_loss(self, X, activation_table=True, override=False):
+        if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
+            return self.last_calculated_loss+self.unfeasible_points_barrier(X)
+        else:
+            feasible = self.simulate_efficiency_independent_variables(X)
+            efficiency = 0.8
+            loss = self.design_features['Po'] * (1 - efficiency) / efficiency
+            error = 2
+            while error > 0.01:
+                loss_last = loss
+                loss = self.total_loss(X, efficiency)
+                efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
+                error = abs(loss_last - loss)
+            if math.isnan(loss) or math.isinf(loss):
+                return 0
+            else:
+                self.last_calculated_loss = loss
+                self.last_calculated_efficiency = efficiency
+                self.last_calculated_operating_point = X
+                return loss
+
+    # Calculates the total loss of the converter, and it's efficiency.
+    # Compensates for the fact that some losses depend of the input current.
     def compensated_total_loss_with_barrier(self, X, activation_table=True, override=False):
         if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
             return self.last_calculated_loss+self.unfeasible_points_barrier(X)
