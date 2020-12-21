@@ -73,9 +73,6 @@ class BoostHalfBridgeInverter:
             return self.last_calculated_loss+self.unfeasible_points_barrier(X)
         else:
             feasible = self.simulate_efficiency_independent_variables(X)
-            if not feasible:
-                self.add_unfeasible_point(X)
-                return 0
             efficiency = 0.8
             loss = self.design_features['Po'] * (1 - efficiency) / efficiency
             error = 2
@@ -86,7 +83,8 @@ class BoostHalfBridgeInverter:
                 error = abs(loss_last - loss)
             if math.isnan(loss) or math.isinf(loss):
                 self.add_unfeasible_point(X)
-                return 0
+                print("ERROWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW")
+                return 50
             else:
                 self.last_calculated_loss = loss
                 self.last_calculated_efficiency = efficiency
@@ -145,6 +143,7 @@ class BoostHalfBridgeInverter:
                 self.last_calculated_loss = loss
                 self.last_calculated_efficiency = efficiency
                 self.last_calculated_operating_point = X
+                print([loss+self.unfeasible_points_barrier(X), True])
                 return [loss+self.unfeasible_points_barrier(X), True]
 
 
@@ -222,14 +221,10 @@ class BoostHalfBridgeInverter:
         constraints = []
 
         # Garantees that the constrains are only calculated if the circuit has been simulated.
-        var = self.compensated_total_loss_with_barrier_and_feasibility(X)
-        feasible = var[1]
+        loss = self.compensated_total_loss(X)
         for restriction in self.restriction_functions:
             func = restriction['function']
-            if not feasible:
-                res = -10
-            else:
-                res = func(self, X)
+            res = func(self, X)
             if math.isnan(res) or math.isinf(res):
                 res=-10
             constraints.append(res)
@@ -244,6 +239,9 @@ class BoostHalfBridgeInverter:
             violation += max(0, -var)**2
         return violation
 
+    # def violation_of_gain_restriction(self, X):
+        
+
     'SIMULATION'
     def simulate_efficiency_independent_variables(self, X):
         fs = X[0]
@@ -256,10 +254,10 @@ class BoostHalfBridgeInverter:
         self.auxiliary_inductor.calculate_rca(fs, 100)
 
         Ts = 1 / fs
-        print('fs = {}, Li = {}, Lk = {}'.format(fs,Li,Lk))
+        # print('fs = {}, Li = {}, Lk = {}'.format(fs,Li,Lk))
         [Vc3, Vc4, D], feasiblity_flag_D = Functions.vc3_vc4_d(self, fs, Lk)
+        # print('Vc3 = {}, Vc4 {}, D = {}'.format(Vc3,Vc4, D))
         Vo = Vc3 + Vc4
-        Functions.vo(self, fs, Lk, D)
 
         calculated_values = {
             'Ts': Ts,
@@ -268,13 +266,6 @@ class BoostHalfBridgeInverter:
             'Vo': Vo,
             'D': D
         }
-        print('Vc3 = {}, Vc4 {}, fs = {}'.format(Vc3,Vc4, fs))
-        print(feasiblity_flag_D)
-        feasibility_flag_t3_t6 = False
-        if feasiblity_flag_D:
-            t3, t6, feasibility_flag_t3_t6 = Functions.t3t6(self, calculated_values)
-        if not feasibility_flag_t3_t6:
-            return False
 
         Po = self.design_features['Po']
         Vi = self.design_features['Vi']['Nominal']
@@ -285,8 +276,6 @@ class BoostHalfBridgeInverter:
 
         Ipk_pos = 2 * n * Vo / (Ro * (1-D))
         Ipk_neg = -2 * n * Vo / (Ro * D)
-        Ipk_pos_1 = 2 * n * Ts * Vo / (Ro * (Ts + t3 - t6))
-        Ipk_neg_1 = 2 * n * Ts * Vo / (Ro * (t3 - t6))
 
         dIin = Vi * D * Ts / Li
         
@@ -294,15 +283,11 @@ class BoostHalfBridgeInverter:
         dBLi = Li*dIin/(self.entrance_inductor.N*self.entrance_inductor.Core.Ae)
 
         aux = {
-            't3': t3,
-            't6': t6,
             'Ro': Ro,
             'Vc1': Vc1,
             'Vc2': Vc2,
             'Ipk_pos': Ipk_pos,
             'Ipk_neg': Ipk_neg,
-            'Ipk_pos_1': Ipk_pos_1,
-            'Ipk_neg_1': Ipk_neg_1,
             'Li': Li,
             'Lk': Lk,
             'Io': Io,
@@ -325,7 +310,7 @@ class BoostHalfBridgeInverter:
         calculated_values['BmaxLk'] = LkVrms/(self.auxiliary_inductor.Core.Ae*fs*7*self.auxiliary_inductor.N)
 
         self.calculated_values = calculated_values
-        return True
+        return feasiblity_flag_D
 
     def simulate_efficiency_dependent_variables(self, X, efficiency):
         
@@ -489,3 +474,7 @@ class BoostHalfBridgeInverter:
 
     def get_simulated_values(self):
         return self.calculated_values
+
+    def Gain_Restriction(self, x):
+        return [Restrictions.Gain_Restriction(self,x), Restrictions.Gain_Restriction_2(self,x)]
+    

@@ -279,25 +279,38 @@ class genetic_optimizer:
 
 
 def optimize_converter(converter, subroutine_iteration= 100, epochs=10, algorithm='SLSQP'):
+    print("Starting Optimization")
     [bounds, feasible] = determine_bounds(converter)
+
+    print("Found Bounds [{}]".format(bounds))
 
     if feasible:
         best = 1000
         result = None
-        for i in range(0, epochs):
+        iteration = 0
+        while iteration < epochs:
+            print("-----------------------------------")
+            print("Try {}".format(iteration))
             x0 = find_feasible_point(converter, bounds)
-            solution = minimize(
-                converter.compensated_total_loss_with_barrier,
-                x0,
-                method=algorithm,
-                bounds = bounds,
-                tol = 1e-12,
-                options={'maxiter': subroutine_iteration, 'disp': False},
-                constraints={'fun': converter.total_constraint, 'type':'ineq'}
-            )
-            if solution.fun < best and solution.success:
-                best = solution.fun
-                result = solution
+            # print('Found a feasible point {}'.format(x0))
+            try:
+                solution = minimize(
+                    converter.compensated_total_loss,
+                    x0,
+                    method=algorithm,
+                    bounds = bounds,
+                    tol = 1e-12,
+                    options={'maxiter': subroutine_iteration, 'disp': False},
+                    constraints={'fun': converter.total_constraint, 'type':'ineq'}
+                )
+                if solution.success:
+                    print("Loss {} W".format(solution.fun))
+                if solution.fun < best and solution.success:
+                    best = solution.fun
+                    result = solution
+            except ValueError:
+                iteration =- 1
+            iteration += 1
         if result:
             return [result, result.success]
         else:
@@ -306,8 +319,6 @@ def optimize_converter(converter, subroutine_iteration= 100, epochs=10, algorith
         return [1000, feasible]
     
 
-# lambda x: converter.total_constraint([a/b for a, b in zip(x, input_scale)])
-# lambda x: converter.compensated_total_loss([a/b for a, b in zip(x, input_scale)]),
 
 # Uses a penalty method to find a feasible point, this feasible point is used as a starting point for the
 # numeric optimizer.
@@ -315,18 +326,17 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100
     if bounds is None:
         bounds = determine_bounds(converter)
 
-    ####
     found_point = False
     iteration = 0
     while not found_point and iteration < 100:
-        x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
+        x0 = find_feasible_gain_operating_point(converter, bounds)
         sol = minimize(
             converter.total_violation,
             x0,
-            method='SLSQP',
+            method='COBYLA',
             tol = 1e-12,
-            options={'maxiter': maxiter, 'disp': False, 'ftol': 1e-10},
-            bounds=bounds,
+            options={'maxiter': maxiter, 'disp': False},
+            constraints={'fun': converter.Gain_Restriction, 'type':'ineq'}
         )
         feasible_point = sol.x
         constraints = converter.total_constraint(feasible_point)
@@ -339,6 +349,21 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100
     else:
         return feasible_point
 
+def find_feasible_gain_operating_point(converter, bounds=None):
+    if bounds is None:
+        bounds = determine_bounds(converter)
+
+    Po = converter.design_features['Po']
+    Vo = converter.design_features['Vo']
+    Vi = converter.design_features['Vi']['Nominal']
+    n = converter.transformer.Ratio
+
+    x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
+    while not Gain_Restriction_Feasible(converter, x0):
+        x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
+    # print('Found a gain feasible point x0 = {}'.format(x0))
+    return x0
+
 
 def determine_bounds(converter):
     Dnominal = converter.design_features['D']['Expected']
@@ -349,84 +374,54 @@ def determine_bounds(converter):
     n = converter.transformer.Ratio
 
     gap_width_bound = [1e-4, 3e-2]
+    shrinking_factor = 0.2
+    frequency_upper_bounds = [
+        (2*converter.entrance_inductor.Penetration_base/converter.entrance_inductor.Cable.Dcu)**2,
+        (2*converter.auxiliary_inductor.Penetration_base/converter.auxiliary_inductor.Cable.Dcu)**2,
+        (2*converter.transformer.Primary.Penetration_base/converter.transformer.Primary.Cable.Dcu)**2,
+        (2*converter.transformer.Secondary.Penetration_base/converter.transformer.Secondary.Cable.Dcu)**2,
+        1e6
+    ]
+    frequency_lower_bounds = [
+        (((1-Dnominal)**2)/(Vnominal**2*Dnominal))*Po/(4*converter.capacitors[0].C*converter.design_features['dVc1']),
+        ((1-Dnominal)/Vnominal**2)*Po/(converter.capacitors[1].C*converter.design_features['dVc2']),
+        Dnominal*Po/(converter.capacitors[2].C*converter.design_features['dVo_max']*Vo**2),
+        (1-Dnominal)*Po/(converter.capacitors[3].C*converter.design_features['dVo_max']*Vo**2),
+        100
+    ]
+    frequency_lower_bound = (1+shrinking_factor)*max(frequency_lower_bounds)
+    frequency_upper_bound = (1-shrinking_factor)*min(frequency_upper_bounds)
 
-    Li_upper_bound_last = converter.entrance_inductor.get_inductance(gap_width_bound[0])
-    Li_lower_bound_last = converter.entrance_inductor.get_inductance(gap_width_bound[1])
-    frequency_upper_bound_last = 1e6
-    frequency_lower_bound_last = 100
-    Lk_upper_bound_last = converter.auxiliary_inductor.get_inductance(gap_width_bound[0])
-    Lk_lower_bound_last = converter.auxiliary_inductor.get_inductance(gap_width_bound[1])
+    # Entrance Inductance Bound.
+    Li_lower_bounds = [
+        converter.entrance_inductor.get_inductance(gap_width_bound[1])
+    ]
+    Li_upper_bounds = [
+        Vnominal*converter.design_features['Bmax']['EntranceInductor']*converter.entrance_inductor.N*converter.entrance_inductor.Core.Ae/(Po*(1+converter.design_features['dIin_max'])),
+        converter.entrance_inductor.get_inductance(gap_width_bound[0])
+    ]
+    Li_lower_bound = (1+shrinking_factor)*max(Li_lower_bounds)
+    Li_upper_bound = (1-shrinking_factor)*min(Li_upper_bounds)
 
-    GR = Gain_Restriction_Term(converter)
+    # Auxiliary Inductance Bound.
+    Lk_lower_bounds = [
+        converter.auxiliary_inductor.get_inductance(gap_width_bound[1])
+    ]
+    Lk_upper_bounds = [
+        converter.auxiliary_inductor.get_inductance(gap_width_bound[0])
+    ]
+    Lk_lower_bound = (1+shrinking_factor)*max(Lk_lower_bounds)
+    Lk_upper_bound = (1-shrinking_factor)*min(Lk_upper_bounds)
 
-    done = False
-    while not done:
-        # Frequency bounds
-        frequency_upper_bounds = [
-            (2*converter.entrance_inductor.Penetration_base/converter.entrance_inductor.Cable.Dcu)**2,
-            (2*converter.auxiliary_inductor.Penetration_base/converter.auxiliary_inductor.Cable.Dcu)**2,
-            (2*converter.transformer.Primary.Penetration_base/converter.transformer.Primary.Cable.Dcu)**2,
-            (2*converter.transformer.Secondary.Penetration_base/converter.transformer.Secondary.Cable.Dcu)**2,
-            GR/Lk_lower_bound_last,
-            0.04799676724137927*Vo**2/(2*n**2*Po*Lk_lower_bound_last),
-            frequency_upper_bound_last
-        ]
-        print(frequency_upper_bounds)
-        frequency_lower_bounds = [
-            (((1-Dnominal)**2)/(Vnominal**2*Dnominal))*Po/(4*converter.capacitors[0].C*converter.design_features['dVc1']),
-            ((1-Dnominal)/Vnominal**2)*Po/(converter.capacitors[1].C*converter.design_features['dVc2']),
-            Dnominal*Po/(converter.capacitors[2].C*converter.design_features['dVo_max']*Vo**2),
-            (1-Dnominal)*Po/(converter.capacitors[3].C*converter.design_features['dVo_max']*Vo**2),
-            frequency_lower_bound_last
-        ]
-        frequency_lower_bound = max(frequency_lower_bounds)
-        frequency_upper_bound = min(frequency_upper_bounds)
-
-        # Entrance inductance bounds.
-        Li_lower_bounds = [
-            Li_lower_bound_last
-        ]
-        Li_upper_bounds = [
-            2*Vnominal*converter.design_features['Bmax']['EntranceInductor']*converter.entrance_inductor.N*converter.entrance_inductor.Core.Ae/(Po*(1+converter.design_features['dIin_max'])),
-            Li_upper_bound_last
-        ]
-        Li_lower_bound = max(Li_lower_bounds)
-        Li_upper_bound = min(Li_upper_bounds)
-
-        Lk_lower_bounds = [
-            Lk_restriction_s1(converter, Vnominal, Dnominal, Li_upper_bound, frequency_upper_bound),
-            Lk_restriction_s2(converter, Vnominal, Dnominal, Li_upper_bound, frequency_upper_bound),
-            Lk_lower_bound_last
-        ]
-        Lk_upper_bounds = [
-            GR/frequency_lower_bound,
-            0.04799676724137927*Vo**2/(2*n**2*Po*frequency_lower_bound),
-            Lk_upper_bound_last
-        ]
-        Lk_upper_bound = min(Lk_upper_bounds)
-        Lk_lower_bound = max(Lk_lower_bounds)
-
-        fl = frequency_lower_bound == frequency_lower_bound_last
-        fu = frequency_upper_bound == frequency_upper_bound_last
-        Lil = Li_lower_bound == Li_lower_bound_last
-        Liu = Li_upper_bound == Li_upper_bound_last
-        Lkl = Lk_lower_bound == Lk_lower_bound_last
-        Lku = Lk_upper_bound == Lk_upper_bound_last
-
-        done = fl and fu and Lil and Liu and Lkl and Lku
-
-        Li_lower_bound_last = Li_lower_bound
-        Li_upper_bound_last = Li_upper_bound
-        frequency_lower_bound_last = frequency_lower_bound
-        frequency_upper_bound_last = frequency_upper_bound
-        Lk_lower_bound_last = Lk_lower_bound
-        Lk_upper_bound_last = Lk_upper_bound
-    
-    
-
-    feasible = True
-    if frequency_lower_bound > frequency_upper_bound or Li_lower_bound > Li_upper_bound or Lk_lower_bound > Lk_upper_bound:
-        feasible = False
+    feasible = not (frequency_lower_bound > frequency_upper_bound or Li_lower_bound > Li_upper_bound or Lk_lower_bound > Lk_upper_bound)
+    if feasible:
+        k1 = LowerFsLk(converter)
+        k2 = UpperFsLk(converter)
+        if k1 > frequency_lower_bound*Lk_lower_bound:
+            Lk_lower_bound = (1+shrinking_factor)*k1 / frequency_lower_bound
+        if k2 < frequency_upper_bound*Lk_upper_bound:
+            Lk_upper_bound = (1-shrinking_factor)*k2 / frequency_upper_bound
+        feasible = not (frequency_lower_bound > frequency_upper_bound or Li_lower_bound > Li_upper_bound or Lk_lower_bound > Lk_upper_bound)
     bounds = ((frequency_lower_bound, frequency_upper_bound), (Li_lower_bound, Li_upper_bound), (Lk_lower_bound, Lk_upper_bound))
     return [bounds, feasible]
 
@@ -449,6 +444,7 @@ def clamp(number, lower_bound, upper_bound=None):
     if number > upper_bound:
         return upper_bound
     return number
+
 
 def random_in_range(bound):
     b = bound[1]

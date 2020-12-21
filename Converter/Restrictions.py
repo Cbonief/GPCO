@@ -54,18 +54,6 @@ def ZVS_restriction(converter, X):
     res = X[2] - k4
     return res
 
-#TransformerRestrictions = [Transformer_Core_Loss, Transformer_Cable_Loss]
-EntranceInductorRestrictions = [dIin_max, bmax_Li, AeAw_Li]
-AuxiliaryInductorRestrictions = [bmax_Lk, AeAw_Lk, JLk, ZVS_restriction]
-# , AeAw_Lk, JLk
-#CapacitorRestrictions = [Capacitor1_Loss, Capacitor2_Loss, Capacitor3_Loss, Capacitor4_Loss]
-#DiodeRestrictions = [Diode3_Loss, Diode4_Loss]
-#SwitchRestrictions = [Switch1_Loss, Switch2_Loss]
-
-Restrictions = []
-Restrictions.extend(EntranceInductorRestrictions)
-Restrictions.extend(AuxiliaryInductorRestrictions)
-
 
 def Lk_restriction_s1(converter, Vi, D, L, fs):
     cs1 = converter.switches[0].Cds
@@ -107,3 +95,67 @@ def Gain_Restriction_Term(converter):
         if new_term < term:
             term = new_term
     return term
+
+
+def Gain_Restriction(converter, x):
+    Po = converter.design_features['Po']
+    Vo = converter.design_features['Vo']
+    Vi = converter.design_features['Vi']['Nominal']
+    n = converter.transformer.Ratio
+
+    k1 = 1.16*n**2*Po
+    nVi = n*Vi
+    k2 = 0.0441*Vo
+    LkFs = x[0]*x[2]
+    return 100*(-LkFs + 0.8*Vo*(0.147*nVi-k2)/k1)
+
+def Gain_Restriction_2(converter, x):
+    Po = converter.design_features['Po']
+    Vo = converter.design_features['Vo']
+    Vi = converter.design_features['Vi']['Nominal']
+    n = converter.transformer.Ratio
+
+    k1 = 1.16*n**2*Po
+    nVi = n*Vi
+    k2 = 0.0441*Vo
+    LkFs = x[0]*x[2]
+    return 100*(LkFs - 1.2*Vo*(0.063*nVi-k2)/k1)
+
+def LowerFsLk(converter):
+    Po = converter.design_features['Po']
+    Vo = converter.design_features['Vo']
+    Vi = converter.design_features['Vi']['Nominal']
+    n = converter.transformer.Ratio
+
+    k1 = 1.16*n**2*Po
+    nVi = n*Vi
+    k2 = 0.0441*Vo
+    return 1.2*Vo*(0.063*nVi-k2)/k1
+
+def UpperFsLk(converter):
+    Po = converter.design_features['Po']
+    Vo = converter.design_features['Vo']
+    Vi = converter.design_features['Vi']['Nominal']
+    n = converter.transformer.Ratio
+
+    k1 = 1.16*n**2*Po
+    nVi = n*Vi
+    k2 = 0.0441*Vo
+    return 0.8*Vo*(0.147*nVi-k2)/k1
+
+def Gain_Restriction_Feasible(converter, x):
+    if Gain_Restriction(converter, x) > 0 and Gain_Restriction_2(converter, x) > 0:
+        return True
+
+EntranceInductorRestrictions = [dIin_max, bmax_Li, AeAw_Li]
+AuxiliaryInductorRestrictions = [bmax_Lk, AeAw_Lk, JLk, ZVS_restriction]
+#CapacitorRestrictions = [Capacitor1_Loss, Capacitor2_Loss, Capacitor3_Loss, Capacitor4_Loss]
+#DiodeRestrictions = [Diode3_Loss, Diode4_Loss]
+#SwitchRestrictions = [Switch1_Loss, Switch2_Loss]
+
+Restrictions = []
+Restrictions.extend(EntranceInductorRestrictions)
+Restrictions.extend(AuxiliaryInductorRestrictions)
+Restrictions.append(Gain_Restriction)
+Restrictions.append(Gain_Restriction_2)
+
