@@ -659,4 +659,4 @@ class Ui_MainWindow(object):
         self.actionComo_utilizar_o_otimizador.setText(_translate("MainWindow", "Como utilizar o otimizador?"))
         self.actionCarregar_Arquivo.setText(_translate("MainWindow", "Carregar Arquivo"))
         self.actionComponentes.setText(_translate("MainWindow", "Componentes"))
-from mplwidget import MplWidget
+from GUI.mplwidget import MplWidget

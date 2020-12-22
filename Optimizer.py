@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 
 
 # Class for the genetic optimizer.
-# It initiliazes with the selected_components, and the features of the desired_converter.
+# It initializes with the selected_components, and the features of the desired_converter.
 class genetic_optimizer:
 
     def __init__(self, selected_components, design_features, safety_params):
@@ -23,7 +23,7 @@ class genetic_optimizer:
 
         self.preselection(selected_components['Switches'], selected_components['Diodes'], selected_components['Capacitors'])
 
-    # Removes elements from the list that will not under any circuntances, be feasible for the given design features.
+    # Removes elements from the list that will not under any circumstances, be feasible for the given design features.
     def preselection(self, switches, diodes, capacitors):
         # Preselection of capacitors.
         c = []
