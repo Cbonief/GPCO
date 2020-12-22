@@ -7,7 +7,7 @@ from Converter.Restrictions import *
 # Calcula Vc3, Vc4 e a razão cíclica necessária para obter o valor de Vo desejado.
 def vc3_vc4_d(obj, fs, Lk):
     start = datetime.datetime.now()
-    Vi = obj.design_features['Vi']['Nominal']
+    Vi = obj.design_features['Vi']
     n = obj.transformer.Ratio
     Ro = obj.design_features['Ro']
     Vo = obj.design_features['Vo']

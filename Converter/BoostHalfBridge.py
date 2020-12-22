@@ -12,7 +12,7 @@ class BoostHalfBridgeInverter:
         self.design_features = circuit_features
         self.safety_params = safety_params
 
-        self.design_features['D']['Expected'] = 1-(self.design_features['Vi']['Nominal']*transformer.Ratio/self.design_features['Vo'])
+        self.design_features['D']['Expected'] = 1-(self.design_features['Vi']*transformer.Ratio/self.design_features['Vo'])
         
         self.loss_functions = Losses.loss_function_map
         self.loss_functions_activation_map = {
@@ -268,7 +268,7 @@ class BoostHalfBridgeInverter:
         }
 
         Po = self.design_features['Po']
-        Vi = self.design_features['Vi']['Nominal']
+        Vi = self.design_features['Vi']
         Ro = self.design_features['Ro']
         Vc1 = Vi * D / (1 - D)
         Vc2 = Vi
@@ -315,7 +315,7 @@ class BoostHalfBridgeInverter:
     def simulate_efficiency_dependent_variables(self, X, efficiency):
         
         Li = X[1]
-        Iin = (self.design_features['Po'] / (self.design_features['Vi']['Nominal']*efficiency))
+        Iin = (self.design_features['Po'] / (self.design_features['Vi']*efficiency))
         dIin = self.calculated_values['dIin']
         Ipk_pos = self.calculated_values['Ipk_pos']
         Ipk_neg = self.calculated_values['Ipk_neg']

@@ -30,9 +30,9 @@ class genetic_optimizer:
         for n in range(0, 4):
             c.append([])
         for capacitor in capacitors:
-            if capacitor.Vmax > self.safety_params['Vc']*max(self.design_features['Vi']['Min']*self.design_features['D']['Max']/(1-self.design_features['D']['Max']), self.design_features['Vi']['Max']*self.design_features['D']['Min']/(1-self.design_features['D']['Min'])):
+            if capacitor.Vmax > self.safety_params['Vc']*self.design_features['Vi']*0.42857142857:
                 c[0].append(capacitor)
-            if capacitor.Vmax > self.safety_params['Vc']*self.design_features['Vi']['Max']:
+            if capacitor.Vmax > self.safety_params['Vc']*self.design_features['Vi']:
                 c[1].append(capacitor)
             if capacitor.Vmax > self.safety_params['Vc']*self.design_features['Vo']/4:
                 c[2].append(capacitor)
@@ -54,7 +54,7 @@ class genetic_optimizer:
         for n in range(0, 2):
             s.append([])
         for switch in switches:
-            if switch.Vmax > self.safety_params['Vs'] * max(self.design_features['Vi']['Max']/(1-self.design_features['D']['Min']), self.design_features['Vi']['Min']/(1-self.design_features['D']['Max'])):
+            if switch.Vmax > self.safety_params['Vs'] * self.design_features['Vi']*1.42857142857:
                 s[0].append(switch)
                 s[1].append(switch)
         self.Switches = s
@@ -85,9 +85,9 @@ class genetic_optimizer:
                 n = [0, 0]
                 while not found:
                     n = [np.random.randint(1, 200), np.random.randint(1, 200)]
-                    a = self.design_features['Vi']['Nominal'] >= self.design_features['Vo']
+                    a = self.design_features['Vi'] >= self.design_features['Vo']
                     b = n[0] >= n[1]
-                    c = self.design_features['Vo']*0.3/self.design_features['Vi']['Min'] < (n[1]/float(n[0])) < self.design_features['Vo']*0.7/self.design_features['Vi']['Max']
+                    c = self.design_features['Vo']*0.3/self.design_features['Vi'] < (n[1]/float(n[0])) < self.design_features['Vo']*0.7/self.design_features['Vi']
                     found = ((a and b) or (not a and not b)) and c
                 ncond = [np.random.randint(1, 100), np.random.randint(1, 100)]
                 transformer = Transformer(core, cables, n, ncond)
@@ -355,7 +355,7 @@ def find_feasible_gain_operating_point(converter, bounds=None):
 
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
-    Vi = converter.design_features['Vi']['Nominal']
+    Vi = converter.design_features['Vi']
     n = converter.transformer.Ratio
 
     x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
@@ -367,7 +367,7 @@ def find_feasible_gain_operating_point(converter, bounds=None):
 
 def determine_bounds(converter):
     Dnominal = converter.design_features['D']['Expected']
-    Vnominal = converter.design_features['Vi']['Nominal']
+    Vnominal = converter.design_features['Vi']
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
     Ro = converter.design_features['Ro']

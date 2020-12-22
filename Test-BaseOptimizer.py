@@ -17,8 +17,7 @@ print('\nConfigurando conversor')
 # Parâmetros desejáveis do conversor.
 design_features = {
     'Vo': 400,
-    'D': {'Nominal': 0.55, 'Max': 0.7, 'Min': 0.3},
-    'Vi': {'Nominal': 17.4, 'Max': 20, 'Min': 15},
+    'Vi': 17.4,
     'Ro': 1231,
     'Po': 130,
     'Bmax': {'Transformer': 0.15, 'EntranceInductor': 0.3, 'AuxiliaryInductor': 0.15},

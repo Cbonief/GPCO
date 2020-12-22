@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import *
 from GUI.MainWindow import Ui_MainWindow
 from GUI.selectComponentWindow import Ui_ComponentSelectWindow
 from GUI.configSecurityWindow import Ui_configSecurityWindow
+from GUI.selectSingleComponentWindow import Ui_SingleComponentSelectWindow
 
 from Optimizer import *
 
@@ -15,6 +16,13 @@ import datetime
 import FileHandler
 import json
 
+ComponentsSelectedPT = {
+    'Capacitors': 'Capacitores Selecionados',
+    'Switches': 'Chaves Selecionadas',
+    'Cores': 'Núcleos Selecionados',
+    'Cables': 'Cabos Selecionados',
+    'Diodes': 'Diodos Selecionados',
+}
 
 class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -28,7 +36,6 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.switches_database = FileHandler.load_all_switches()
         self.capacitors_database = FileHandler.load_all_capacitors()
         self.diodes_database = FileHandler.load_all_diodes()
-        self.dissipators_database = FileHandler.load_all_dissipators()
 
         self.converter_configured = True
         self.security_params_configured = True
@@ -39,7 +46,6 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             'Cores': [],
             'Cables': [],
             'Diodes': [],
-            'Dissipators': []
         }
         self.selected_components = {
             'Capacitors': [],
@@ -47,8 +53,44 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             'Cores': [],
             'Cables': [],
             'Diodes': [],
-            'Dissipators': []
         }
+
+        self.available_components_specific = {
+            'C1': [],
+            'C2': [],
+            'C3': [],
+            'C4': [],
+            'D3': [],
+            'D4': [],
+            'S1': [],
+            'S2': [],
+            'LiCore': [],
+            'LiCable': [],
+            'LkCore': [],
+            'LkCable': [],
+            'TrPrimaryCable': [],
+            'TrSecondaryCable': [],
+            'TrCore': []
+        }
+
+        self.selected_components_specific = {
+            'C1': None,
+            'C2': None,
+            'C3': None,
+            'C4': None,
+            'D3': None,
+            'D4': None,
+            'S1': None,
+            'S2': None,
+            'LiCore': None,
+            'LiCable': None,
+            'LkCore': None,
+            'LkCable': None,
+            'TrPrimaryCable': None,
+            'TrSecondaryCable': None,
+            'TrCore': None
+        }
+        self.selected_components_specifc = {}
         for name in self.capacitors_database:
             self.available_components['Capacitors'].append(name)
             print(self.capacitors_database[name].Vmax)
@@ -60,8 +102,6 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             self.available_components['Cables'].append(name)
         for name in self.diodes_database:
             self.available_components['Diodes'].append(name)
-        for name in self.dissipators_database:
-            self.available_components['Dissipators'].append(name)
 
         # Variable needed to open a new window in the app.
         self.window = None
@@ -73,11 +113,16 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.component_being_selected = None
         self.select_component_window = None
         self.config_security_window = None
+        self.select_specific_component_window = None
+
+        self.select_single_component_viewport = QtWidgets.QMainWindow()
+        self.select_single_component_window = Ui_SingleComponentSelectWindow()
+        self.select_single_component_window.setupUi(self.select_single_component_viewport)
+        self.select_single
 
         self.circuit_features = {
             'Vo': 0.0,
-            'Vi': {'Min': 0.0, 'Nominal': 0.0, 'Max': 0.0},
-            'D': {'Min': 0.0, 'Nominal': 0.0, 'Max': 0.0},
+            'Vi': 0.0,
             'dIin_max': 0.0,
             'dVo_max': 0.0,
             'Po': 0.0,
@@ -86,8 +131,7 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         }
         self.circuit_features_input_table = {
             'Vo': self.input_Vo,
-            'Vi': {'Min': self.input_VinMin, 'Nominal': self.input_Vin, 'Max': self.input_VinMax},
-            'D': {'Min': self.input_Dmin, 'Nominal': self.input_D, 'Max': self.input_Dmax},
+            'Vi': self.input_Vin,
             'dIin_max': self.input_DeltaIin,
             'dVo_max': self.input_DeltaVo,
             'Po': self.input_Po,
@@ -236,7 +280,38 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.select_component_window.setupUi(self.window)
         self.select_component_window.add_button.clicked.connect(self.add_component)
         self.select_component_window.remove_button.clicked.connect(self.remove_component)
-        self.select_component_window.label.setText('Selecionados')
+        self.select_component_window.label.setText(ComponentsSelectedPT[component_being_selected])
+
+        self.model_available = QStandardItemModel(self.select_component_window.list_available)
+        for name in self.available_components[component_being_selected]:
+            item = QStandardItem(name)
+            item.setEditable(False)
+            self.model_available.appendRow(item)
+        self.select_component_window.list_available.setModel(self.model_available)
+        try:
+            self.select_component_window.list_available.clicked.connect(self.component_available_clicked)
+        finally:
+            self.model_selected = QStandardItemModel(self.select_component_window.list_selected)
+            for name in self.selected_components[component_being_selected]:
+                item = QStandardItem(name)
+                item.setEditable(False)
+                self.model_selected.appendRow(item)
+            self.select_component_window.list_selected.setModel(self.model_selected)
+            try:
+                self.select_component_window.list_selected.clicked.connect(self.component_selected_clicked)
+            finally:
+                self.window.show()
+
+    def open_select_single_component_window(self, component_being_selected):
+        self.selected_item = None
+
+        self.component_being_selected = component_being_selected
+        self.window = QtWidgets.QMainWindow()
+        self.select_component_window = Ui_ComponentSelectWindow()
+        self.select_component_window.setupUi(self.window)
+        self.select_component_window.add_button.clicked.connect(self.add_component)
+        self.select_component_window.remove_button.clicked.connect(self.remove_component)
+        self.select_component_window.label.setText(ComponentsSelectedPT[component_being_selected])
 
         self.model_available = QStandardItemModel(self.select_component_window.list_available)
         for name in self.available_components[component_being_selected]:
@@ -310,8 +385,16 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButtonCapSel.clicked.connect(partial(self.open_select_component_window, 'Capacitors'))
         self.pushButtonCoreSel.clicked.connect(partial(self.open_select_component_window, 'Cores'))
         self.pushButtonDiodeSel.clicked.connect(partial(self.open_select_component_window, 'Diodes'))
-        self.pushButtonDissSel.clicked.connect(partial(self.open_select_component_window, 'Disspators'))
         self.pushButtonSwitchSel.clicked.connect(partial(self.open_select_component_window, "Switches"))
+
+        self.pushButtonCableSel.clicked.connect(partial(self.open_select_component_window, 'C1'))
+        self.pushButtonCapSel.clicked.connect(partial(self.open_select_component_window, 'C2'))
+        self.pushButtonCoreSel.clicked.connect(partial(self.open_select_component_window, 'C3'))
+        self.pushButtonDiodeSel.clicked.connect(partial(self.open_select_component_window, 'C4'))
+        self.pushButtonSwitchSel.clicked.connect(partial(self.open_select_component_window, "D3"))
+        self.pushButtonSwitchSel.clicked.connect(partial(self.open_select_component_window, "D4"))
+        self.pushButtonSwitchSel.clicked.connect(partial(self.open_select_component_window, "S1"))
+        self.pushButtonSwitchSel.clicked.connect(partial(self.open_select_component_window, "S2"))
 
         self.actionNew.triggered.connect(self.create_file)
         self.actionSave.triggered.connect(self.save_file)
@@ -324,8 +407,7 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             'Switches': [],
             'Cores': [],
             'Cables': [],
-            'Diodes': [],
-            'Dissipators': []
+            'Diodes': []
         }
         for name in self.selected_components['Capacitors']:
             components['Capacitors'].append(self.capacitors_database[name])

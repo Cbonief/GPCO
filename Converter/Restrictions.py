@@ -43,7 +43,7 @@ def ZVS_restriction(converter, X):
     cs2 = converter.switches[1].Cds
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
-    Vi = converter.design_features['Vi']['Nominal']
+    Vi = converter.design_features['Vi']
     Ro = converter.design_features['Ro']
     D = converter.calculated_values['D']
     n = converter.transformer.Ratio
@@ -80,27 +80,11 @@ def Lk_restriction_s2(converter, Vi, D, L, fs):
     return k1/k2
 
 
-def Gain_Restriction_Term(converter):
-    Vo = converter.design_features['Vo']
-    Ro = converter.design_features['Ro']
-    n = converter.transformer.Ratio
-
-    keys = ['Min', 'Max']
-    Dbound = [converter.design_features['D']['Max']+0.01, converter.design_features['D']['Max']-0.01]
-
-    term = 1e10
-    for [D, key] in zip(Dbound, keys):
-        Vi = converter.design_features['Vi'][key]
-        new_term = Ro*D**2*(1-D)*(Vi*n - Vo*(1-D))/(Vo*((2*D-1)**2+1)*n**2)
-        if new_term < term:
-            term = new_term
-    return term
-
 
 def Gain_Restriction(converter, x):
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
-    Vi = converter.design_features['Vi']['Nominal']
+    Vi = converter.design_features['Vi']
     n = converter.transformer.Ratio
 
     k1 = 1.16*n**2*Po
@@ -112,7 +96,7 @@ def Gain_Restriction(converter, x):
 def Gain_Restriction_2(converter, x):
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
-    Vi = converter.design_features['Vi']['Nominal']
+    Vi = converter.design_features['Vi']
     n = converter.transformer.Ratio
 
     k1 = 1.16*n**2*Po
@@ -124,7 +108,7 @@ def Gain_Restriction_2(converter, x):
 def LowerFsLk(converter):
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
-    Vi = converter.design_features['Vi']['Nominal']
+    Vi = converter.design_features['Vi']
     n = converter.transformer.Ratio
 
     k1 = 1.16*n**2*Po
@@ -135,7 +119,7 @@ def LowerFsLk(converter):
 def UpperFsLk(converter):
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
-    Vi = converter.design_features['Vi']['Nominal']
+    Vi = converter.design_features['Vi']
     n = converter.transformer.Ratio
 
     k1 = 1.16*n**2*Po
