@@ -1,4 +1,3 @@
-from Optimizer import *
 from TestComponents import *
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
@@ -13,7 +12,7 @@ cores = [NEE_20, NEE_30_15, NEE_42_20_Ideal, NEE_20_Ideal, NEE_30_15_Ideal, NEE_
 cables = [AWG_23, IdealCable]
 print('\n Componentes Criados')
 
-# Cria a estura responsável por passar os componentes disponível para a busca do GA.
+# Cria a estura responsável por passar os componentes disponível para a busca do Optimizer.
 selected_components = {
     'Cores': cores,
     'Switches': switches,

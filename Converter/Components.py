@@ -1,10 +1,12 @@
+import inspect
+
 import numpy as np
 
 uo = 4*np.pi*1e-7
 
 
 def loadFSD():
-    file = open("FSD/FSD_data.txt", "r")
+    file = open("Converter/FSD/FSD_data.txt", "r")
     contents = file.readlines()
     file.close()
     fsd = []
@@ -20,8 +22,11 @@ try:
 except FileNotFoundError:
     print('Didn´t find FSD')
 
+
 # Classe base que contém o nome do componente.
 class Component:
+    type = 'Component'
+
     def __init__(self, Name):
         self.Name = Name
 
@@ -31,7 +36,21 @@ class Component:
     def get_name(self):
         return self.Name
 
+    def __hash__(self):
+        return self.Name
+
+    def __repr__(self):
+        representation = "\n{} {} \n".format(self.type, self.Name)
+        for i in inspect.getmembers(self):
+            if not i[0].startswith('_') and not i[0] == 'Name' and not i[0] == 'type':
+                if not inspect.ismethod(i[1]):
+                    representation += "{}: = {}\n".format(i[0], i[1])
+        return representation
+
+
 class Switch(Component):
+    type = 'Switch'
+
     def __init__(self, ton, toff, Rdson, Vmax, Cds=0, Name=None):
         Component.__init__(self, Name)
         self.Ton = ton
@@ -42,6 +61,8 @@ class Switch(Component):
 
 
 class Diode(Component):
+    type = 'Diode'
+
     def __init__(self, vd, rt, Vmax, Name=None):
         Component.__init__(self, Name)
         self.Vd = vd
@@ -50,13 +71,18 @@ class Diode(Component):
 
 
 class Capacitor(Component):
+    type = 'Capacitor'
+
     def __init__(self, C, Rse, Vmax, Name=None):
         Component.__init__(self, Name)
         self.C = C
         self.RSE = Rse
         self.Vmax = Vmax    
 
+
 class Cable(Component):
+    type = 'Cable'
+
     def __init__(self, Dcu, D, rho, Ur, Name=None):
         Component.__init__(self, Name)
         self.Scu = np.pi*(Dcu**2)/4
@@ -68,6 +94,8 @@ class Cable(Component):
 
 
 class Core(Component):
+    type = 'Core'
+
     def __init__(self, AeAw, Ae, Aw, Ve, Kc, alpha, beta, lt, Bj, Name=None):
         Component.__init__(self, Name)
         self.AeAw = AeAw

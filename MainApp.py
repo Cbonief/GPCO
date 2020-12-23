@@ -1,20 +1,18 @@
+import datetime
+import json
 import sys
 from functools import partial
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from GUI.MainWindow import Ui_MainWindow
-from GUI.selectComponentWindow import Ui_ComponentSelectWindow
-from GUI.configSecurityWindow import Ui_configSecurityWindow
-from GUI.selectSingleComponentWindow import Ui_SingleComponentSelectWindow
-
-from Optimizer import *
-
-import datetime
 
 import FileHandler
-import json
+from GUI.MainWindow import Ui_MainWindow
+from GUI.configSecurityWindow import Ui_configSecurityWindow
+from GUI.inductorCreateWindow import Ui_CreateInductorWindow
+from GUI.selectComponentWindow import Ui_ComponentSelectWindow
+from GUI.selectSingleComponentWindow import Ui_SingleComponentSelectWindow
 
 ComponentsSelectedPT = {
     'Capacitors': 'Capacitores Selecionados',
@@ -22,6 +20,11 @@ ComponentsSelectedPT = {
     'Cores': 'Núcleos Selecionados',
     'Cables': 'Cabos Selecionados',
     'Diodes': 'Diodos Selecionados',
+}
+
+ComponentsSelectedPT3 = {
+    'Li': 'Indutor de Entrada',
+    'Lk': 'Indutor Auxiliar'
 }
 
 ComponentsSelectedPT2 = {
@@ -55,6 +58,13 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.switches_database = FileHandler.load_all_switches()
         self.capacitors_database = FileHandler.load_all_capacitors()
         self.diodes_database = FileHandler.load_all_diodes()
+        self.components_database = {
+            'Cores': self.cores_database,
+            'Cables': self.cables_database,
+            'Switches': self.switches_database,
+            'Diodes': self.diodes_database,
+            'Capacitors': self.capacitors_database
+        }
 
         self.converter_configured = True
         self.security_params_configured = True
@@ -116,7 +126,6 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             self.available_components_specific['C2'].append(name)
             self.available_components_specific['C3'].append(name)
             self.available_components_specific['C4'].append(name)
-            print(self.capacitors_database[name].Vmax)
         for name in self.switches_database:
             self.available_components['Switches'].append(name)
             self.available_components_specific['S1'].append(name)
@@ -154,6 +163,15 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.select_single_component_window.setupUi(self.select_single_component_viewport)
         self.select_single_component_window.select_button.clicked.connect(self.add_single_component)
         self.select_single_component_window.remove_button.clicked.connect(self.remove_single_component)
+
+        self.inductor_being_created = None
+        self.create_inductor_viewport = QtWidgets.QMainWindow()
+        self.create_inductor_window = Ui_CreateInductorWindow()
+        self.create_inductor_window.setupUi(self.create_inductor_viewport)
+        self.create_inductor_window.pushButtonVerify.clicked.connect(self.verify_inductor)
+
+        self.EntranceInductor = None
+        self.AuxiliaryInductor = None
 
         self.circuit_features = {
             'Vo': 0.0,
@@ -447,6 +465,51 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             self.select_single_component_window.list_selected.setModel(self.model_selected)
             self.selected_item = None
 
+    def open_create_inductor_window(self, inductor_name):
+        self.inductor_being_created = inductor_name
+        self.create_inductor_window.pushButtonCoreSel.clicked.connect(partial(self.open_select_single_component_window, inductor_name + 'Core'))
+        self.create_inductor_window.pushButtonCableSel.clicked.connect(partial(self.open_select_single_component_window, inductor_name + 'Cable'))
+        self.create_inductor_viewport.setWindowTitle(ComponentsSelectedPT3[inductor_name])
+        self.create_inductor_viewport.show()
+
+    def verify_inductor(self):
+        print(self.create_inductor_window.spinbox_N.value())
+        print(self.create_inductor_window.spinbox_Np.value())
+        if self.create_inductor_window.spinbox_N.value() != 0 and self.create_inductor_window.spinbox_Np.value() != 0 and len(self.selected_components_specific[self.inductor_being_created+'Core']) > 0 and len(self.selected_components_specific[self.inductor_being_created+'Cable']) > 0:
+            print('ok')
+            new_inductor = Inductor(self.cores_database[self.selected_components_specific[self.inductor_being_created+'Core'][0]], self.cables_database[self.selected_components_specific[self.inductor_being_created+'Cable'][0]], self.create_inductor_window.spinbox_N.value(), self.create_inductor_window.spinbox_Np.value())
+            map = {
+                'Li': 'EntranceInductor',
+                'Lk': 'AuxiliaryInductor'
+            }
+            print('ok')
+            if new_inductor.is_feasible(self.safety_params['ku'][map[self.inductor_being_created]]):
+                print('Ok')
+                warning = QMessageBox()
+                warning.setWindowTitle("FIM")
+                warning.setText("Indutor Salvo.")
+                warning.setIcon(QMessageBox.Warning)
+                warning.exec_()
+                if self.inductor_being_created == 'Li':
+                    self.EntranceInductor = new_inductor
+                else:
+                    self.AuxiliaryInductor = new_inductor
+            else:
+                warning = QMessageBox()
+                warning.setWindowTitle("FIM")
+                warning.setText("O indutor criado ocupa mais que o permitido por kuAw")
+                warning.setIcon(QMessageBox.Warning)
+                warning.exec_()
+        else:
+            warning = QMessageBox()
+            warning.setWindowTitle("ATENÇÃO")
+            warning.setText("Algum Parâmetro do Indutor não foi configurado.")
+            warning.setIcon(QMessageBox.Warning)
+            warning.exec_()
+
+    def testFunction(self):
+        print(self.tabWidget.currentIndex())
+
     def connect_actions(self):
         self.pushButtonCreateConverter.clicked.connect(self.save_circuit_features)
         self.optimize_button.clicked.connect(self.optimize)
@@ -465,10 +528,16 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButtonSelS1.clicked.connect(partial(self.open_select_single_component_window, "S1"))
         self.pushButtonSelS2.clicked.connect(partial(self.open_select_single_component_window, "S2"))
 
+        self.pushButtonSelLi.clicked.connect(partial(self.open_create_inductor_window, 'Li'))
+        self.pushButtonSelLk.clicked.connect(partial(self.open_create_inductor_window, 'Lk'))
+
         self.actionNew.triggered.connect(self.create_file)
         self.actionSave.triggered.connect(self.save_file)
         self.actionOpen.triggered.connect(self.open_file)
         self.actionSecurityConfig.triggered.connect(self.open_security_config_window)
+
+
+        self.testButton.clicked.connect(self.testFunction)
 
     def get_components(self):
         components = {

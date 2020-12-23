@@ -1,9 +1,11 @@
-import Converter.Restrictions as Restrictions
-import Converter.Losses as Losses
-import Converter.auxiliary_functions as Functions
-import numpy as np
 import math
+
+import numpy as np
 from scipy.spatial import distance
+
+import Converter.Losses as Losses
+import Converter.Restrictions as Restrictions
+import Converter.auxiliary_functions as Functions
 
 
 class BoostHalfBridgeInverter:
@@ -12,8 +14,9 @@ class BoostHalfBridgeInverter:
         self.design_features = circuit_features
         self.safety_params = safety_params
 
+        self.design_features['D'] = {}
         self.design_features['D']['Expected'] = 1-(self.design_features['Vi']*transformer.Ratio/self.design_features['Vo'])
-        
+
         self.loss_functions = Losses.loss_function_map
         self.loss_functions_activation_map = {
             'Transformer': {'Core': True, 'Primary': True, 'Secondary': True},
@@ -27,7 +30,7 @@ class BoostHalfBridgeInverter:
         self.restriction_functions = []
         for restriction in Restrictions.Restrictions:
             self.restriction_functions.append({'active': True, 'function': restriction})
-        
+
         # Componentes
         self.transformer = transformer
         self.entrance_inductor = entrance_inductor

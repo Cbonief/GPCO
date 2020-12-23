@@ -1,11 +1,6 @@
-from matplotlib.pyplot import *
-import numpy as np
-import time
-
 from Converter.BoostHalfBridge import *
+from Optimizer.Numeric.Optimizer import optimize_converter
 from TestComponents import *
-from Optimizer import *
-
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
 
@@ -40,9 +35,7 @@ safety_params = {
 # Cria uma instância do conversor Boost Half-Bridge
 converter = BoostHalfBridgeInverter(Trafo, Li, Lk, design_features, switches, diodes, capacitors, safety_params)
 converter.summarize() # Mostra um resumo do conversor criado. (Precisa de um update)
-[result, sucess] = optimize_converter(converter)
-
-output = result.x
+[result, sucess, output] = optimize_converter(converter)
 
 print('Solution:')
 print('Fs: {} Hz'.format(output[0]))

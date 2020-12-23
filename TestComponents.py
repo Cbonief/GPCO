@@ -45,6 +45,9 @@ Li = Inductor(cores[1], cables[1], N[2], Ncond[2])
 Lk = Inductor(cores[2], cables[2], N[3], Ncond[3])
 
 
+print(cores)
+
+
 # expected_losses = {
 #     'Transformer': {'Core': 2.911, 'Primary': 0.718, 'Secondary': 0.82},
 #     'EntranceInductor': {'Core': 0.036, 'Cable': 2.103},
