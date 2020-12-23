@@ -24,7 +24,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>GPCO - General Power Converter Optimizer</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="minimumSize">
@@ -1614,6 +1614,9 @@
       <height>190</height>
      </size>
     </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QLabel" name="label">
     <property name="enabled">
@@ -1629,6 +1632,19 @@
     </property>
     <property name="text">
      <string>Descrição do Conversor</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="testButton">
+    <property name="geometry">
+     <rect>
+      <x>370</x>
+      <y>310</y>
+      <width>75</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Otimizar</string>
     </property>
    </widget>
   </widget>

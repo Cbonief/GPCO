@@ -524,6 +524,9 @@ class Ui_MainWindow(object):
         self.label.setEnabled(True)
         self.label.setGeometry(QtCore.QRect(380, 20, 121, 16))
         self.label.setObjectName("label")
+        self.testButton = QtWidgets.QPushButton(self.centralwidget)
+        self.testButton.setGeometry(QtCore.QRect(370, 310, 75, 23))
+        self.testButton.setObjectName("testButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1080, 21))
@@ -601,7 +604,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "GPCO - General Power Converter Optimizer"))
         self.label_ConfiguracoesDoOtimizador_2.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:12pt;\">Configuração do Conversor</span></p></body></html>"))
         self.label_Topologia.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:10pt;\">Topologia</span></p></body></html>"))
         self.comboBox.setItemText(0, _translate("MainWindow", "Boost Half Bridge"))
@@ -635,6 +638,7 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.NumericOptimizerTab), _translate("MainWindow", "Otimização Específica"))
         self.optimize_button.setText(_translate("MainWindow", "Otimizar"))
         self.label.setText(_translate("MainWindow", "Descrição do Conversor"))
+        self.testButton.setText(_translate("MainWindow", "Otimizar"))
         self.menuIn_cio.setTitle(_translate("MainWindow", "Arquivo"))
         self.menuBiblioteca.setTitle(_translate("MainWindow", "Biblioteca"))
         self.menuAdd_Component.setTitle(_translate("MainWindow", "Adicionar Componente"))

@@ -6,33 +6,33 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>329</width>
-    <height>332</height>
+    <width>330</width>
+    <height>438</height>
    </rect>
-  </property>
-  <property name="sizePolicy">
-   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-    <horstretch>0</horstretch>
-    <verstretch>0</verstretch>
-   </sizepolicy>
   </property>
   <property name="minimumSize">
    <size>
-    <width>329</width>
-    <height>0</height>
+    <width>330</width>
+    <height>438</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>329</width>
-    <height>332</height>
+    <width>330</width>
+    <height>438</height>
    </size>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Transformador</string>
+  </property>
+  <property name="iconSize">
+   <size>
+    <width>24</width>
+    <height>24</height>
+   </size>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QSpinBox" name="spinbox_N">
+   <widget class="QSpinBox" name="input_Np">
     <property name="geometry">
      <rect>
       <x>190</x>
@@ -45,7 +45,7 @@
      <number>200</number>
     </property>
    </widget>
-   <widget class="QSpinBox" name="spinbox_Np">
+   <widget class="QSpinBox" name="input_Npp">
     <property name="geometry">
      <rect>
       <x>190</x>
@@ -58,42 +58,11 @@
      <number>200</number>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButtonCoreSel">
+   <widget class="QPushButton" name="buttonPrimaryCableSel">
     <property name="geometry">
      <rect>
       <x>190</x>
       <y>120</y>
-      <width>120</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="minimumSize">
-     <size>
-      <width>120</width>
-      <height>25</height>
-     </size>
-    </property>
-    <property name="maximumSize">
-     <size>
-      <width>120</width>
-      <height>25</height>
-     </size>
-    </property>
-    <property name="text">
-     <string>Escolher Núcleo</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButtonCableSel">
-    <property name="geometry">
-     <rect>
-      <x>190</x>
-      <y>160</y>
       <width>120</width>
       <height>25</height>
      </rect>
@@ -182,11 +151,11 @@
      <string>Número de Fios em Paralelo</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButtonVerify">
+   <widget class="QPushButton" name="buttonVerify">
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>230</y>
+      <y>370</y>
       <width>120</width>
       <height>25</height>
      </rect>
@@ -213,11 +182,172 @@
      <string>Verificar e Salvar</string>
     </property>
    </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>120</y>
+      <width>141</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>80</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>141</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>Cabo do Primário:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>20</y>
+      <width>191</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Primário</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>170</y>
+      <width>191</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Secundário</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="input_Nps">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>230</y>
+      <width>42</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>200</number>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="input_Ns">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>200</y>
+      <width>42</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>200</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label2_2">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>230</y>
+      <width>141</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>121</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>141</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>Número de Fios em Paralelo</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>200</y>
+      <width>121</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>121</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>141</width>
+      <height>20</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>Número de Espiras</string>
+    </property>
+   </widget>
    <widget class="QLabel" name="label_3">
     <property name="geometry">
      <rect>
-      <x>60</x>
-      <y>120</y>
+      <x>50</x>
+      <y>310</y>
       <width>16</width>
       <height>16</height>
      </rect>
@@ -226,11 +356,42 @@
      <string/>
     </property>
    </widget>
+   <widget class="QPushButton" name="buttonCoreSel">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>310</y>
+      <width>120</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>25</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>25</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>Escolher Núcleo</string>
+    </property>
+   </widget>
    <widget class="QLabel" name="label_5">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>120</y>
+      <x>30</x>
+      <y>310</y>
       <width>141</width>
       <height>20</height>
      </rect>
@@ -257,11 +418,42 @@
      <string>Núcleo:</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_6">
+   <widget class="QPushButton" name="buttonSecondaryCableSel">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>160</y>
+      <x>180</x>
+      <y>260</y>
+      <width>120</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>120</width>
+      <height>25</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>120</width>
+      <height>25</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>Escolher Cabo</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>260</y>
       <width>141</width>
       <height>20</height>
      </rect>
@@ -285,14 +477,40 @@
      </size>
     </property>
     <property name="text">
-     <string>Cabo:</string>
+     <string>Cabo do Primário:</string>
+    </property>
+   </widget>
+   <widget class="Line" name="line">
+    <property name="geometry">
+     <rect>
+      <x>7</x>
+      <y>290</y>
+      <width>311</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="Line" name="line_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>150</y>
+      <width>311</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
     </property>
    </widget>
    <widget class="Line" name="line_3">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>200</y>
+      <y>340</y>
       <width>311</width>
       <height>20</height>
      </rect>
@@ -307,7 +525,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>329</width>
+     <width>330</width>
      <height>21</height>
     </rect>
    </property>
@@ -315,8 +533,8 @@
     <property name="title">
      <string>Componente</string>
     </property>
-    <addaction name="actionSalvar"/>
-    <addaction name="actionSalvar_2"/>
+    <addaction name="actionNew"/>
+    <addaction name="actionSave"/>
    </widget>
    <widget class="QMenu" name="menuConfigura_es">
     <property name="title">
@@ -329,12 +547,12 @@
    <addaction name="menuConfigura_es"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionSalvar">
+  <action name="actionNew">
    <property name="text">
     <string>Novo</string>
    </property>
   </action>
-  <action name="actionSalvar_2">
+  <action name="actionSave">
    <property name="text">
     <string>Salvar</string>
    </property>
