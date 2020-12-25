@@ -366,7 +366,7 @@ def find_feasible_gain_operating_point(converter, bounds=None):
 
 
 def determine_bounds(converter):
-    Dnominal = converter.design_features['D']['Expected']
+    Dnominal = converter.design_features['D_Expected']
     Vnominal = converter.design_features['Vi']
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']

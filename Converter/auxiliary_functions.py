@@ -12,8 +12,8 @@ def vc3_vc4_d(obj, fs, Lk):
     Ro = obj.design_features['Ro']
     Vo = obj.design_features['Vo']
     k = 2*fs*Lk*n**2/Ro
-    b = -obj.design_features['D']['Expected'] - 1
-    c = 2*k + obj.design_features['D']['Expected']
+    b = -obj.design_features['D_Expected'] - 1
+    c = 2*k + obj.design_features['D_Expected']
     d = -2*k
     e = k
 

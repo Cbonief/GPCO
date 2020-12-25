@@ -12,7 +12,7 @@ class BoostHalfBridgeInverter:
         self.design_features = circuit_features
         self.safety_params = safety_params
 
-        self.design_features['D']['Expected'] = 1-(self.design_features['Vi']*transformer.Ratio/self.design_features['Vo'])
+        self.design_features['D_Expected'] = 1-(self.design_features['Vi']*transformer.Ratio/self.design_features['Vo'])
         
         self.loss_functions = Losses.loss_function_map
         self.loss_functions_activation_map = {
