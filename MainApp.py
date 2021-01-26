@@ -13,6 +13,7 @@ from GUI.configSecurityWindow import Ui_configSecurityWindow
 from GUI.inductorCreateWindow import Ui_CreateInductorWindow
 from GUI.selectComponentWindow import Ui_ComponentSelectWindow
 from GUI.selectSingleComponentWindow import Ui_SingleComponentSelectWindow
+from GUI.inductorCreateWindow import Ui_CreateInductorWindow
 
 ComponentsSelectedPT = {
     'Capacitors': 'Capacitores Selecionados',
