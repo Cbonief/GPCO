@@ -15,7 +15,7 @@ The superficial layer uses a genetic algorithm to handle the discrete variables,
 ## 1. Description of the problem
 The problem of optimizing a converter's characteristic while satisfying design and physical constraints can be mathematically write as:
 
-![](https://i.imgur.com/jzpz3OZ.gif)
+![Optimization Problem](https://i.imgur.com/X1LOx7i.png)
 
 Where X are all the converter's parameters that are considered free in the optimization, R are the performance requirements, such as: <img src="https://render.githubusercontent.com/render/math?math=V_i">, <img src="https://render.githubusercontent.com/render/math?math=V_o">, <img src="https://render.githubusercontent.com/render/math?math=\Delta_o">, etc. And finally K are component related restrictions and parameters, such as the maximum reverse voltage on a diode.
 
