@@ -13,7 +13,7 @@ The superficial layer uses a genetic algorithm to handle the discrete variables,
 ![Hello](https://i.imgur.com/MKGG5rW.png)
 
 ## Table of Contents
-  - [1. Description of the Problem](#1.-description-of-the-problem)
+  - [1. Description of the Problem](#1-description-of-the-problem)
   	- [Phase One - Placement](#phase-one)
   	- [Phase Two - Movement](#phase-two)
   	- [Phase Three - Movement](#phase-three)
