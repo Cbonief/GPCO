@@ -72,18 +72,14 @@ The latest implementation of the converter's components can be seen in the class
 
 ## 4. Future work
 
-Currently, all restrictions and losses are hard coded for the Boost Half Bridge, so for the future we have the following goals:
-- Refactor how the components are stored in the converter, so they can all be called from a single for loop if need, or called by type.
-
-- Implement component especific restrictitions and losses in the component's class.
-
-- Make it so the user can insert their own custom current or voltage equation for all the components. The same will be done for converter especific restrictions.
-
-- The restrictions will be separate based on wheter they depend on:
-1. only component.
-2. more than one component.
-3. the continuous variables but no on the efficiency of the converter.
-4. the efficiency of the converter.
+The final goal for the GPCO is to be a generalized, multi topology, power converter optimizer. For that goal to happen, there a couple of milestones to be reached first:
+- Refactor how the components are store in the converter:
+Right now, all components are a separate variable inside the Boost Half Bridge class. That won't work if we want to have a wide arrange of converters, and even custom ones.
+Most likely the components will have to be stored in a map inside the (not implemented yet) Converter class.
+- Refactor the simulation, again:
+Make a map between components and their simulation functions.
+- Implement component especific restrictitions and losses in each component's class:
+This goes hand in hand with the previous item.
 
 ## REFERENCES
 
