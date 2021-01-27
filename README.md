@@ -1,3 +1,4 @@
+Leia em [Português-BR](README-pt_BR.md)
 
 # GPCO - General Power Converter Optimizer
 Written by **Carlos Bonifácio Eberhardt Franco**
@@ -11,8 +12,21 @@ The superficial layer uses a genetic algorithm to handle the discrete variables,
 
 ![Hello](https://i.imgur.com/MKGG5rW.png)
 
+## Table of Contents
+  - [1. Description of the Problem](#1.-description-of-the-problem)
+  	- [Phase One - Placement](#phase-one)
+  	- [Phase Two - Movement](#phase-two)
+  	- [Phase Three - Movement](#phase-three)
+  - [The Implementation](#the-implementation)
+  	- [The Game](#the-game)
+  	- [The AI](#the-ai)
+	- [Minimax and Negamax](#minimax-and-negamax)
+  	- [The UI](#the-ui)
+	- [Pygame](#minimax-and-negamax)
+	- [Widgets](#widgets)
 
-## 1. Description of the problem
+
+## 1. Description of the Problem
 The problem of optimizing a converter's characteristic while satisfying design and physical constraints can be mathematically write as:
 
 ![Optimization Problem](https://i.imgur.com/X1LOx7i.png)
