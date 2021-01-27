@@ -14,16 +14,15 @@ The superficial layer uses a genetic algorithm to handle the discrete variables,
 
 ## Table of Contents
   - [1. Description of the Problem](#1-description-of-the-problem)
-  	- [Phase One - Placement](#phase-one)
-  	- [Phase Two - Movement](#phase-two)
-  	- [Phase Three - Movement](#phase-three)
-  - [The Implementation](#the-implementation)
-  	- [The Game](#the-game)
-  	- [The AI](#the-ai)
-	- [Minimax and Negamax](#minimax-and-negamax)
-  	- [The UI](#the-ui)
-	- [Pygame](#minimax-and-negamax)
-	- [Widgets](#widgets)
+  - [2. Main Algorithm](#2-main-algorithm)
+  	- [2.1 Genetic Algorithm](#21-genetic-algorithm)
+  	- [2.2 Numeric Optimizer](#22-numeric-optimizer)
+  - [3. Converter Implementation](#2-converter-implementation)
+  	- [3.1 Components](#31-components)
+  	- [3.2 The Model](#32-the-model)
+	- [3.3 Losses](#33-losses)
+	- [3.4 Restrictions](#34-restrictions)
+  - [4. Future Work](#4-future-work)
 
 
 ## 1. Description of the Problem
@@ -52,18 +51,26 @@ The step "Test Population" is when the gradient based algorithm get's used, beca
 
 In the GPCO the default numeric optimizer for this layer is SLSQP (Sequential Least Square Quadratic Programming), using the package SciPy. But in fact any optimizer that is able to deal with inequality constraints is suitable for the job. Some examples of these type of optimizers are: COBYLA, SUMT and ALAG.
 
-## 3. How to components are implemented
+## 3. Converter Implementation 
+
+*A class diagram will be added soon.*
+
+## 3.1 The Components
 The latest implementation of the converter's components can be seen in the class diagram below. In it we see that all components inherit from the class Component, whose only information is the name of the component.
 
 *Figure 3 -  Components Class Diagram*
 
 ![enter image description here](https://i.imgur.com/48baHHL.jpg)
 
-## 4. Converter Implementation 
+## 3.2 The Model
 
-A class diagram will be added soon.
 
-## 5. Future work
+## 3.3 Losses
+
+
+
+
+## 4. Future work
 
 Currently, all restrictions and losses are hard coded for the Boost Half Bridge, so for the future we have the following goals:
 - Refactor how the components are stored in the converter, so they can all be called from a single for loop if need, or called by type.
