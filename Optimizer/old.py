@@ -2,7 +2,6 @@ from scipy.optimize import minimize
 
 from Converter.BoostHalfBridge import BoostHalfBridgeInverter
 from Converter.Components import *
-from Converter.Restrictions import *
 from Converter.auxiliary_functions import *
 
 
@@ -337,7 +336,7 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100
             method='COBYLA',
             tol=1e-12,
             options={'maxiter': maxiter, 'disp': False},
-            constraints={'fun': converter.Gain_Restriction, 'type': 'ineq'}
+            constraints={'fun': converter.gain_restriction, 'type': 'ineq'}
         )
         feasible_point = sol.x
         constraints = converter.total_constraint(feasible_point)
@@ -361,7 +360,7 @@ def find_feasible_gain_operating_point(converter, bounds=None):
     n = converter.transformer.Ratio
 
     x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
-    while not Gain_Restriction_Feasible(converter, x0):
+    while not gain_restriction_feasibility(converter, x0):
         x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
     # print('Found a gain feasible point x0 = {}'.format(x0))
     return x0
@@ -421,8 +420,8 @@ def determine_bounds(converter):
     feasible = not (
                 frequency_lower_bound > frequency_upper_bound or Li_lower_bound > Li_upper_bound or Lk_lower_bound > Lk_upper_bound)
     if feasible:
-        k1 = LowerFsLk(converter)
-        k2 = UpperFsLk(converter)
+        k1 = lower_fs_lk_bound_constant(converter)
+        k2 = upper_fs_lk_bound_constant(converter)
         if k1 > frequency_lower_bound * Lk_lower_bound:
             Lk_lower_bound = (1 + shrinking_factor) * k1 / frequency_lower_bound
         if k2 < frequency_upper_bound * Lk_upper_bound:

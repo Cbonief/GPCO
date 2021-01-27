@@ -33,8 +33,10 @@ safety_params = {
 }
 
 # Cria uma instância do conversor Boost Half-Bridge
-converter = BoostHalfBridgeInverter(Trafo, Li, Lk, design_features, switches, diodes, capacitors, safety_params)
-converter.summarize() # Mostra um resumo do conversor criado. (Precisa de um update)
+converter = BoostHalfBridgeInverter(design_features, safety_params, Trafo, Li, Lk, switches, diodes, capacitors)
+print(Trafo)
+
+print(converter)
 [result, sucess, output] = optimize_converter(converter)
 
 print('Solution:')
@@ -42,4 +44,4 @@ print('Fs: {} Hz'.format(output[0]))
 print('Li: {} H'.format(output[1]))
 print('Lk: {} H'.format(output[2]))
 
-print(converter.total_constraint(output))
+print(converter.compensated_total_loss(output))

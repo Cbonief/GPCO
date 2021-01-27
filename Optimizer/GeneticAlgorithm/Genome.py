@@ -39,7 +39,7 @@ class Genome:
                         self.genes[i] = available_genes[gene_key][0]
             else:
                 if np.random.rand() < rewrite_rate:
-                    self.genes[i] = np.random.choice(available_genes)
+                    self.genes[i] = np.random.choice(available_genes[gene_key])
 
     def set_custom_data(self, data):
         self.custom_data = data

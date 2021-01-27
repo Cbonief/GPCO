@@ -3,7 +3,7 @@ from scipy.optimize import minimize
 from Converter.Restrictions import *
 
 
-def optimize_converter(converter, subroutine_iteration=100, epochs=10, algorithm='SLSQP', bounds=None):
+def optimize_converter(converter, subroutine_iteration=100, epochs=2, algorithm='SLSQP', bounds=None):
     feasible = False
     if bounds is None:
         [bounds, feasible] = determine_bounds(converter)
@@ -16,35 +16,38 @@ def optimize_converter(converter, subroutine_iteration=100, epochs=10, algorithm
         iteration = 0
         while iteration < epochs:
             x0 = find_feasible_point(converter, bounds)
-            try:
-                solution = minimize(
-                    converter.compensated_total_loss,
-                    x0,
-                    method=algorithm,
-                    bounds=bounds,
-                    tol=1e-12,
-                    options={'maxiter': subroutine_iteration, 'disp': False},
-                    constraints={'fun': converter.total_constraint, 'type': 'ineq'}
-                )
-                if solution.success:
-                    print("Loss {} W".format(solution.fun))
-                if solution.fun < best and solution.success:
-                    best = solution.fun
-                    optimization_result = solution
-            except ValueError:
-                iteration = - 1
-            iteration += 1
+            if x0 is not None:
+                try:
+                    solution = minimize(
+                        converter.compensated_total_loss,
+                        x0,
+                        method=algorithm,
+                        bounds=bounds,
+                        tol=1e-12,
+                        options={'maxiter': subroutine_iteration, 'disp': False},
+                        constraints={'fun': converter.total_constraint, 'type': 'ineq'}
+                    )
+                    if solution.fun < best and solution.success:
+                        best = solution.fun
+                        optimization_result = solution
+                except ValueError:
+                    iteration -= 1
+                finally:
+                    iteration += 1
+            else:
+                return [None, False, []]
         if optimization_result:
+            print(best)
             return [best, optimization_result.success, optimization_result.x]
         else:
-            return [converter.design_features['Po']/10, False, []]
+            return [2*converter.design_features['Po'], False, []]
     else:
         return [None, False, []]
 
 
 # Uses a penalty method to find a feasible point, this feasible point is used as a starting point for the
 # numeric optimizer.
-def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100):
+def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=10):
     if bounds is None:
         bounds = determine_bounds(converter)
 
@@ -53,20 +56,26 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=100
     iteration = 0
     while not found_point and iteration < maxiter:
         x0 = find_feasible_gain_operating_point(converter, bounds)
-        sol = minimize(
-            converter.total_violation,
-            x0,
-            method='COBYLA',
-            tol=1e-12,
-            options={'maxiter': maxiter, 'disp': False},
-            constraints={'fun': converter.Gain_Restriction, 'type': 'ineq'}
-        )
-        feasible_point = sol.x
-        constraints = converter.total_constraint(feasible_point)
-        found_point = True
-        for constraint in constraints:
-            if constraint <= 0:
-                found_point = False
+        try:
+            sol = minimize(
+                converter.total_violation,
+                x0,
+                method='SLSQP',
+                tol=1e-12,
+                bounds=bounds,
+                options={'maxiter': 100, 'disp': False},
+                constraints={'fun': converter.gain_restriction, 'type': 'ineq'}
+            )
+            feasible_point = sol.x
+            constraints = converter.total_constraint(feasible_point)
+            found_point = True
+            for constraint in constraints:
+                if constraint <= 0:
+                    found_point = False
+        except ValueError:
+            iteration -= 1
+        finally:
+            iteration += 1
     if return_bounds:
         return [feasible_point, bounds]
     else:
@@ -82,14 +91,16 @@ def find_feasible_gain_operating_point(converter, bounds=None):
     Vi = converter.design_features['Vi']
     n = converter.transformer.Ratio
 
+    iteration = 0
     x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
-    while not Gain_Restriction_Feasible(converter, x0):
+    while not gain_restriction_feasibility(converter, x0) and iteration < 100:
         x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
+        iteration += 1
     return x0
 
 
 def determine_bounds(converter):
-    Dnominal = converter.design_features['D']['Expected']
+    Dnominal = converter.design_features['D_Expected']
     Vnominal = converter.design_features['Vi']
     Po = converter.design_features['Po']
     Vo = converter.design_features['Vo']
@@ -142,8 +153,8 @@ def determine_bounds(converter):
     feasible = not (
                 frequency_lower_bound > frequency_upper_bound or Li_lower_bound > Li_upper_bound or Lk_lower_bound > Lk_upper_bound)
     if feasible:
-        k1 = LowerFsLk(converter)
-        k2 = UpperFsLk(converter)
+        k1 = lower_fs_lk_bound_constant(converter)
+        k2 = upper_fs_lk_bound_constant(converter)
         if k1 > frequency_lower_bound * Lk_lower_bound:
             Lk_lower_bound = (1 + shrinking_factor) * k1 / frequency_lower_bound
         if k2 < frequency_upper_bound * Lk_upper_bound:

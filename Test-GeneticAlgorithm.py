@@ -1,31 +1,52 @@
+from Optimizer.GeneticAlgorithm.CustomUtilization import optimize_components
 from TestComponents import *
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
 
-print('Rodando o arquivo Test-GeneticAlgorithm.py')
+print('Running Test-GeneticAlgorithm.py')
 
 # Carrega os componentes presentes no arquivo TestComponents.py.
 diodes = [HFA04SD60S, IdealDiode]
+diode_map = {}
+for diode in diodes:
+    diode_map[diode.get_name()] = diode
 capacitors = [capacitor1, capacitor2, capacitor3, capacitor4]
+capacitor_map = {}
+for capacitor in capacitors:
+    capacitor_map[capacitor.get_name()] = capacitor
 switches = [IRFR7740PbF, IdealSwitch]
+switch_map = {}
+for switch in switches:
+    switch_map[switch.get_name()] = switch
 cores = [NEE_20, NEE_30_15, NEE_42_20_Ideal, NEE_20_Ideal, NEE_30_15_Ideal, NEE_42_20_Ideal]
+core_map = {}
+for core in cores:
+    core_map[core.get_name()] = core
 cables = [AWG_23, IdealCable]
-print('\n Componentes Criados')
+cable_map = {}
+for cable in cables:
+    cable_map[cable.get_name()] = cable
 
 # Cria a estura responsável por passar os componentes disponível para a busca do Optimizer.
-selected_components = {
-    'Cores': cores,
-    'Switches': switches,
-    'Capacitors': capacitors,
-    'Diodes': diodes,
-    'Cables': cables
+components_data_base = {
+    'Cores': core_map,
+    'Switches': switch_map,
+    'Capacitors': capacitor_map,
+    'Diodes': diode_map,
+    'Cables': cable_map
 }
+
+selected_components_keys = {}
+for key in components_data_base.keys():
+    selected_components_keys[key] = []
+    for component_name in components_data_base[key].keys():
+        selected_components_keys[key].append(component_name)
 
 # Parâmetros desejáveis do conversor.
 design_features = {
     'Vo': 400,
     'D': {'Max': 0.7, 'Min': 0.3},
-    'Vi': {'Nominal': 17.4, 'Max': 25, 'Min': 15},
+    'Vi': 17.4,
     'Ro': 1231,
     'Po': 130,
     'Bmax': {'Transformer': 0.15, 'EntranceInductor': 0.3, 'AuxiliaryInductor': 0.15},
@@ -37,7 +58,7 @@ design_features = {
 }
 
 # Parâmetros de segurança.
-safety_params = {
+safety_parameters = {
     'Vc': 1.5,
     'Vd': 1.5,
     'Id': 2.0,
@@ -47,8 +68,5 @@ safety_params = {
     'ku': {'Transformer': 0.4, 'EntranceInductor': 0.6, 'AuxiliaryInductor': 0.4}
 }
 
-# Cria uma instância do Algoritmo Genético.
-GA = genetic_optimizer(selected_components, design_features, safety_params)
-
-# Otimiza o conversor utilizando uma população de 10 indivíduos.
-solution = GA.optimize(population_size=10)
+converter = optimize_components(selected_components_keys, components_data_base, design_features, safety_parameters)
+print(converter)

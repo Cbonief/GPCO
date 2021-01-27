@@ -1,8 +1,8 @@
-import numpy as np
-from scipy.optimize import fsolve, root, minimize
 import datetime
-from Converter.fqs import *
+
 from Converter.Restrictions import *
+from Converter.fqs import *
+
 
 # Calcula Vc3, Vc4 e a razão cíclica necessária para obter o valor de Vo desejado.
 def vc3_vc4_d(obj, fs, Lk):
@@ -26,13 +26,13 @@ def vc3_vc4_d(obj, fs, Lk):
                 D = dVal.real
                 Found = True
     if not Found:
-        print("Gain Error at [{},{}]; [{},{}]".format(fs,Lk, Gain_Restriction(obj, [fs, 0, Lk]), Gain_Restriction_2(obj, [fs, 0, Lk])))
-        return [Vo/2,Vo/2,0.5], False
+        print("Gain Error at [{},{}]; [{},{}]".format(fs, Lk, gain_restriction(obj, [fs, 0, Lk]), gain_restriction_2(obj, [fs, 0, Lk])))
+        raise ValueError
     else:
         Vc3 = n*(D*Vi/(1-D) - 2*n*Lk*fs*Vo/(Ro*D**2))
         Vc4 = n*(Vi - 2*n*Lk*fs*Vo/(Ro*(1-D)**2))
         solution = [Vc3, Vc4, D]
-    return solution, Found
+    return solution
 
 # Sistema de equações para obter Vc3, Vc4 e D.
 def fvo(X, k1, k2, Vo):
@@ -220,6 +220,14 @@ def s2_irms(obj, values):
     Ti = [0, D*Ts]
     Tf = [D*Ts, Ts]
 
+    oi = rms_piecewise_linear(A, B, Ti, Tf, Ts)
+    if oi > 1000:
+        print(oi)
+        print(1/Ts)
+        print(Lk)
+        print(Iin)
+        print(n)
+        print(values['Efficiency'])
     return rms_piecewise_linear(A, B, Ti, Tf, Ts)
 
 
