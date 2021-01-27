@@ -16,7 +16,7 @@ The superficial layer uses a genetic algorithm to handle the discrete variables,
   - [1. Description of the Problem](#1-description-of-the-problem)
   - [2. Main Algorithm](#2-main-algorithm)
   	- [2.1 Genetic Algorithm](#21-genetic-algorithm)
-  	- [2.2 Numeric Optimizer](#22-numeric-optimizer)
+  	- [2.2 Numeric Algorithm](#22-numeric-algorithm)
   - [3. Converter Implementation](#2-converter-implementation)
   	- [3.1 Components](#31-components)
   	- [3.2 The Model](#32-the-model)
