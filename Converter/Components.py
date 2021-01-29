@@ -6,7 +6,7 @@ uo = 4*np.pi*1e-7
 
 
 def loadFSD():
-    file = open("Converter/FSD/FSD_data.txt", "r")
+    file = open("FSD/FSD_data.txt", "r")
     contents = file.readlines()
     file.close()
     fsd = []

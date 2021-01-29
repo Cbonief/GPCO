@@ -1,21 +1,14 @@
 # Arquivo de teste para as novas restrições de Lk e Fs baseadas na equação do ganho.
 
-from matplotlib.pyplot import *
-import numpy as np
-import time
-
 from Converter.BoostHalfBridge import *
-from TestComponents import *
-from Optimizer import *
-
-from Converter.auxiliary_functions import vc3_vc4_d
 from Converter.Restrictions import *
-
+from Converter.auxiliary_functions import vc3_vc4_d
+from test_components import *
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
 
 
-'Todos os componentes são carregados no arquivo TestComponents.py'
+'Todos os componentes são carregados no arquivo test_components.py'
 
 print('\nConfigurando conversor')
 

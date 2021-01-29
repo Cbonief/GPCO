@@ -1,7 +1,6 @@
 import math
 
 import numpy as np
-from scipy.spatial import distance
 
 import Converter.Losses as Losses
 import Converter.Restrictions as Restrictions
@@ -44,30 +43,6 @@ class BoostHalfBridgeInverter:
         self.last_calculated_efficiency = None
         self.calculated_values = {}
 
-        self.unfeasible_operating_points = []
-        self.operating_points_scale = []
-        self.number_of_unfeasible_points = 0
-
-
-    def unfeasible_points_barrier(self, X):
-        var = 0
-        for point in self.unfeasible_operating_points:
-            point = np.divide(point, self.operating_points_scale)
-            var += 1/(2*(distance.euclidean(point, X)))
-        return var
-
-    def add_unfeasible_point(self, X):
-        if not np.prod(X == self.unfeasible_operating_points, dtype=bool):
-            self.unfeasible_operating_points.append(X)
-            self.number_of_unfeasible_points += 1
-            scale = [0,0,0]
-            for point in self.unfeasible_operating_points:
-                scale[0] += point[0]/self.number_of_unfeasible_points
-                scale[1] += point[1]/self.number_of_unfeasible_points
-                scale[2] += point[2]/self.number_of_unfeasible_points
-            self.operating_points_scale = scale
-
-
     # Calculates the total loss of the converter, and it's efficiency.
     # Compensates for the fact that some losses depend of the input current.
     def compensated_total_loss(self, X, activation_table=True, override=False):
@@ -81,7 +56,7 @@ class BoostHalfBridgeInverter:
             efficiency = 0.8
             loss = self.design_features['Po'] * (1 - efficiency) / efficiency
             error = 2
-            while error > 0.01:
+            while error > 0.1:
                 loss_last = loss
                 loss = self.total_loss(X, efficiency)
                 efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
@@ -98,100 +73,21 @@ class BoostHalfBridgeInverter:
 
     # Calculates the total loss of the converter, and it's efficiency.
     # Compensates for the fact that some losses depend of the input current.
-    def compensated_total_loss_with_barrier(self, X, activation_table=True, override=False):
-        if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
-            return self.last_calculated_loss+self.unfeasible_points_barrier(X)
-        else:
-            feasible = self.simulate_efficiency_independent_variables(X)
-            if not feasible:
-                self.add_unfeasible_point(X)
-                return self.unfeasible_points_barrier(X)
-            efficiency = 0.8
-            loss = self.design_features['Po'] * (1 - efficiency) / efficiency
-            error = 2
-            while error > 0.01:
-                loss_last = loss
-                loss = self.total_loss(X, efficiency)
-                efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
-                error = abs(loss_last - loss)
-            if math.isnan(loss) or math.isinf(loss):
-                self.add_unfeasible_point(X)
-                return self.unfeasible_points_barrier(X)
-            else:
-                self.last_calculated_loss = loss
-                self.last_calculated_efficiency = efficiency
-                self.last_calculated_operating_point = X
-                return loss+self.unfeasible_points_barrier(X)
-
-    # Calculates the total loss of the converter, and it's efficiency.
-    # Compensates for the fact that some losses depend of the input current.
-    def compensated_total_loss_with_barrier_and_feasibility(self, X, activation_table=True, override=False):
-        if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
-            return self.last_calculated_loss+self.unfeasible_points_barrier(X)
-        else:
-            feasible = self.simulate_efficiency_independent_variables(X)
-            if not feasible:
-                self.add_unfeasible_point(X)
-                return [self.unfeasible_points_barrier(X), False]
-            efficiency = 0.8
-            loss = self.design_features['Po'] * (1 - efficiency) / efficiency
-            error = 2
-            while error > 0.1:
-                loss_last = loss
-                loss = self.total_loss(X, efficiency)
-                efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
-                error = abs(loss_last - loss)
-            if math.isnan(loss) or math.isinf(loss):
-                self.add_unfeasible_point(X)
-                return [self.unfeasible_points_barrier(X), False]
-            else:
-                self.last_calculated_loss = loss
-                self.last_calculated_efficiency = efficiency
-                self.last_calculated_operating_point = X
-                return [loss+self.unfeasible_points_barrier(X), True]
-
-
-    # Calculates the total loss of the converter, and it's efficiency.
-    # Compensates for the fact that some losses depend of the input current.
-    def compensated_total_loss_with_feasibility(self, X, activation_table=True, override=False):
-        if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
-            return self.last_calculated_loss
-        else:
-            feasible = self.simulate_efficiency_independent_variables(X)
-            if not feasible:
-                return 0, False
-            efficiency = 0.8
-            loss = self.design_features['Po'] * (1 - efficiency) / efficiency
-            error = 2
-            while error > 0.01:
-                loss_last = loss
-                loss = self.total_loss(X, efficiency)
-                efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
-                error = abs(loss_last - loss)
-            if math.isnan(loss) or math.isinf(loss):
-                return 0, False
-            else:
-                self.last_calculated_loss = loss
-                self.last_calculated_efficiency = efficiency
-                self.last_calculated_operating_point = X
-                return loss, True
-
-    # Calculates the total loss of the converter, and it's efficiency.
-    # Compensates for the fact that some losses depend of the input current.
     def compensated_total_loss_separate(self, X, activation_table=True):
-        feasible = self.simulate_efficiency_independent_variables(X)
-        if not feasible:
-            return None, False
+        try:
+            self.simulate_efficiency_independent_variables(X)
+        except ValueError:
+            raise ValueError
         efficiency = 0.8
         total_loss = self.design_features['Po'] * (1 - efficiency) / efficiency
         error = 2
-        while error > 0.01:
+        losses = None
+        while error > 0.1:
             loss_last = total_loss
-            loss = self.total_loss_separate(X, efficiency)
-            total_loss = loss['Total']
+            losses, total_loss = self.total_loss_separate(X, efficiency)
             efficiency = self.design_features['Po'] / (self.design_features['Po'] + total_loss)
             error = abs(loss_last - total_loss)
-        return loss, True
+        return losses, total_loss
 
     # Calculates the total loss of the converter, for a given estimated efficiency.
     def total_loss(self, X, efficiency):
@@ -206,18 +102,17 @@ class BoostHalfBridgeInverter:
 
     # Same as 'total_loss' but returns a dictonary containing all losses.
     def total_loss_separate(self, X, efficiency):
-        output = {}
-        total = 0
+        losses = {}
+        total_loss = 0
         self.simulate_efficiency_dependent_variables(X, efficiency)
         for component in self.loss_functions:
-            output[component] = {}
+            losses[component] = {}
             for loss_type in self.loss_functions[component]:
                 if self.loss_functions_activation_map[component][loss_type]:
                     partial = self.loss_functions[component][loss_type](self, X)
-                    output[component][loss_type] = partial
-                    total = total + partial
-        output['Total'] = total
-        return output
+                    losses[component][loss_type] = partial
+                    total_loss = total_loss + partial
+        return losses, total_loss
 
 
     # Calculates all constraints.

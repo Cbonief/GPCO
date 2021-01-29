@@ -221,13 +221,6 @@ def s2_irms(obj, values):
     Tf = [D*Ts, Ts]
 
     oi = rms_piecewise_linear(A, B, Ti, Tf, Ts)
-    if oi > 1000:
-        print(oi)
-        print(1/Ts)
-        print(Lk)
-        print(Iin)
-        print(n)
-        print(values['Efficiency'])
     return rms_piecewise_linear(A, B, Ti, Tf, Ts)
 
 

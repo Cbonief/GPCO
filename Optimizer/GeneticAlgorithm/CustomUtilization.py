@@ -208,7 +208,7 @@ def evaluate_genome(genome, epoch, features):
 
 
 GA_DEFAULT_CONFIG = {
-    'Population Size': 100,
+    'Population Size': 50,
     'Mutation Rate': 0.9,
     'Epochs': 100,
     'Rewrite Rate': 0.25

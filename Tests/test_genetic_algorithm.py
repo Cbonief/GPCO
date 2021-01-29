@@ -1,11 +1,11 @@
 from Optimizer.GeneticAlgorithm.CustomUtilization import optimize_components
-from TestComponents import *
+from test_components import *
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
 
-print('Running Test-GeneticAlgorithm.py')
+print('Running test_genetic_algorithm.py')
 
-# Carrega os componentes presentes no arquivo TestComponents.py.
+# Carrega os componentes presentes no arquivo test_components.py.
 diodes = [HFA04SD60S, IdealDiode]
 diode_map = {}
 for diode in diodes:

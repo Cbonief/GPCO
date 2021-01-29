@@ -1,11 +1,11 @@
 from Converter.BoostHalfBridge import *
 from Optimizer.Numeric.Optimizer import optimize_converter
-from TestComponents import *
+from test_components import *
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'
 
 
-'Todos os componentes são carregados no arquivo TestComponents.py'
+'Todos os componentes são carregados no arquivo test_components.py'
 
 print('\nConfigurando conversor')
 

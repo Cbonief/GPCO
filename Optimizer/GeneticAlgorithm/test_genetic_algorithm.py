@@ -22,7 +22,7 @@ genetic_algorithm = GeneticAlgorithm(100, {'x': [-100, 100], 'y': [-10, 10], 'z'
 genetic_algorithm.create_population(random_generator)
 
 
-def fitness_function(genome):
+def fitness_function(genome, epoch):
     try:
         return 1/(sum(genome.genes)-100)
     except ZeroDivisionError:
