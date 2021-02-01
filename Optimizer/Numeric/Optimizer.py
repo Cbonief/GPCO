@@ -28,6 +28,8 @@ def optimize_converter(converter, subroutine_iteration=100, epochs=2, algorithm=
                         options={'maxiter': subroutine_iteration, 'disp': False},
                         constraints={'fun': converter.total_constraint, 'type': 'ineq'}
                     )
+                    if solution.success:
+                        print(solution.fun)
                     if solution.fun < best and solution.success:
                         best = solution.fun
                         optimization_result = solution
@@ -73,6 +75,8 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=10)
             for constraint in constraints:
                 if constraint <= 0:
                     found_point = False
+            if found_point:
+                print(sol.fun)
         except ValueError:
             iteration -= 1
         finally:

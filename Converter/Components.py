@@ -6,7 +6,7 @@ uo = 4*np.pi*1e-7
 
 
 def loadFSD():
-    file = open("FSD/FSD_data.txt", "r")
+    file = open("D:\Desktop\Boni\Code\Python\ConverterOptimizer\Converter\FSD\FSD_data.txt", "r")
     contents = file.readlines()
     file.close()
     fsd = []
@@ -16,7 +16,7 @@ def loadFSD():
         fsd.append(float(aux2[0]))
     return tuple(fsd)
 
-
+FSD = ()
 try:
     FSD = loadFSD()
 except FileNotFoundError:
@@ -119,7 +119,7 @@ class Inductor(Component):
 
         self.Penetration_base = np.sqrt(self.Cable.Rho / (np.pi * self.Cable.Ur * uo))
 
-        dsq = cable.Dcu *np.sqrt(np.pi/Ncond)/2
+        dsq = cable.Dcu*np.sqrt(np.pi/Ncond)/2
         self.FSD = FSD[Ncond - 1]
         self.NC = np.ceil(self.FSD*self.Cable.D * N / self.Core.Bj)
         ada = (N/self.NC)*dsq/self.Core.Bj
@@ -141,7 +141,7 @@ class Inductor(Component):
                 ratio = 1
             else:
                 a = self.A_base * np.sqrt(n*fo)
-                ratio = a*(f1(a) + (2/3)*((self.NC**2 - 1))*f2(a))
+                ratio = a*(f1(a) + (2/3)*((self.NC-1)**2)*f2(a))
             self.rca[n] = ratio * self.rcc
 
     def get_rca(self, n):

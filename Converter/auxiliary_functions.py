@@ -17,21 +17,21 @@ def vc3_vc4_d(obj, fs, Lk):
     d = -2*k
     e = k
 
-
-    Dlist = single_quartic(1,b,c,d,e)
-    Found = False
-    for dVal in Dlist:
+    D = -1
+    dlist = single_quartic(1,b,c,d,e)
+    found = False
+    for dVal in dlist:
         if dVal.imag == 0:
             if 0.3 <= dVal.real <= 0.7:
                 D = dVal.real
-                Found = True
-    if not Found:
+                found = True
+    if not found:
         print("Gain Error at [{},{}]; [{},{}]".format(fs, Lk, gain_restriction(obj, [fs, 0, Lk]), gain_restriction_2(obj, [fs, 0, Lk])))
         raise ValueError
     else:
-        Vc3 = n*(D*Vi/(1-D) - 2*n*Lk*fs*Vo/(Ro*D**2))
-        Vc4 = n*(Vi - 2*n*Lk*fs*Vo/(Ro*(1-D)**2))
-        solution = [Vc3, Vc4, D]
+        vc3 = n*(D*Vi/(1-D) - 2*n*Lk*fs*Vo/(Ro*D**2))
+        vc4 = n*(Vi - 2*n*Lk*fs*Vo/(Ro*(1-D)**2))
+        solution = [vc3, vc4, D]
     return solution
 
 # Sistema de equações para obter Vc3, Vc4 e D.
@@ -100,6 +100,7 @@ def TransformerPrimaryCurrentHarmonics(obj, values):
 
     harmonics = fourier_piecewise_linear(A, B, Ti, Tf, 1/Ts, 40)
     return harmonics
+
 
 def TransformerCurrentHarmonics(obj, values):
     Ts = values['Ts']
