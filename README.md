@@ -70,8 +70,6 @@ The latest implementation of the converter's components can be seen in the class
 ### 3.4 Restrictions
 
 
-
-
 ## 4. Future work
 
 The final goal for the GPCO is to be a generalized, multi topology, power converter optimizer. For that goal to happen, there a couple of milestones to be reached first:
