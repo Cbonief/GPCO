@@ -12,20 +12,20 @@ Figura 1 - Conversor CC-CC *Boost Half Bridge*
 
 ![Hello](https://i.imgur.com/MKGG5rW.png)
 
-## Table of Contents
-  - [1. Description of the Problem](#1-description-of-the-problem)
-  - [2. Main Algorithm](#2-main-algorithm)
-  	- [2.1 Genetic Algorithm](#21-genetic-algorithm)
-  	- [2.2 Numeric Algorithm](#22-numeric-algorithm)
-  - [3. Converter Implementation](#2-converter-implementation)
-  	- [3.1 Components](#31-components)
-  	- [3.2 The Model](#32-the-model)
-	- [3.3 Losses](#33-losses)
-	- [3.4 Restrictions](#34-restrictions)
-  - [4. Future Work](#4-future-work)
+## Sumário
+  - [1. Descrição do Problema](#1-descrição-do-problema)
+  - [2. Algoritmo Principal](#2-algoritmo-principal)
+  	- [2.1 Algoritmo Genético](#21-algoritmo-genético)
+  	- [2.2 Algoritmo Numérico](#22-algoritmo-numérico)
+  - [3. Implementação do Conversor](#2-converter-implementation)
+  	- [3.1 Componentes](#31-components)
+  	- [3.2 Modelagem](#32-the-model)
+	- [3.3 Perda](#33-losses)
+	- [3.4 Restriçõe](#34-restrictions)
+  - [4. Trabalhos Futuros](#4-future-work)
 
 
-## 1. Description of the Problem
+## 1. Descrição do Problema
 The problem of optimizing a converter's characteristic while satisfying design and physical constraints can be mathematically write as:
 
 ![Optimization Problem](https://i.imgur.com/X1LOx7i.png)
