@@ -1,22 +1,20 @@
-import Converter.Restrictions as Restrictions
-import Converter.Losses as Losses
-import Converter.auxiliary_functions as Functions
-import numpy as np
 import math
-from scipy.spatial import distance
+
+import numpy as np
+
+import Converter.Losses as Losses
+import Converter.Restrictions as Restrictions
+import Converter.auxiliary_functions as Functions
 
 
 class BoostHalfBridgeInverter:
 
-    def __init__(self, transformer, entrance_inductor, auxiliary_inductor, circuit_features, switches, diodes, capacitors, safety_params,dissipators=None):
-        self.design_features = circuit_features
-        self.design_features['D'] = {
-            'Max': 1-(self.design_features['Vi']['Min']*transformer.Ratio/self.design_features['Vo']),
-            'Min': 1-(self.design_features['Vi']['Max']*transformer.Ratio/self.design_features['Vo'])
-        }
-        self.design_features['D']['Expected'] = 1-(self.design_features['Vi']['Nominal']*transformer.Ratio/self.design_features['Vo'])
-        self.safety_params = safety_params
+    def __init__(self, design_features, safety_params, transformer, entrance_inductor, auxiliary_inductor, switches, diodes, capacitors):
+        self.design_features = design_features
+        self.safety_parameters = safety_params
 
+        self.design_features['D_Expected'] = 1-(self.design_features['Vi']*transformer.Ratio/self.design_features['Vo'])
+        
         self.loss_functions = Losses.loss_function_map
         self.loss_functions_activation_map = {
             'Transformer': {'Core': True, 'Primary': True, 'Secondary': True},
@@ -38,7 +36,6 @@ class BoostHalfBridgeInverter:
         self.capacitors = capacitors
         self.diodes = diodes
         self.switches = switches
-        self.dissipators = dissipators
 
         # Variáveis referentes à simulação.
         self.last_calculated_operating_point = [0,0,0]
@@ -46,46 +43,28 @@ class BoostHalfBridgeInverter:
         self.last_calculated_efficiency = None
         self.calculated_values = {}
 
-        self.unfeasible_operating_points = []
-        self.operating_points_scale = []
-        self.number_of_unfeasible_points = 0
-
-
-    def unfeasible_points_barrier(self, X):
-        var = 0
-        for point in self.unfeasible_operating_points:
-            point = np.divide(point, self.operating_points_scale)
-            var += 1/(2*(distance.euclidean(point, X)))
-        return var
-
-    def add_unfeasible_point(self, X):
-        if X not in self.unfeasible_operating_points:
-            self.unfeasible_operating_points.append(X)
-            self.number_of_unfeasible_points += 1
-            scale = [0,0,0]
-            for point in self.unfeasible_operating_points:
-                scale[0] += point[0]
-                scale[1] += point[1]
-                scale[2] += point[2]
-            self.operating_points_scale = scale/self.number_of_unfeasible_points
-
     # Calculates the total loss of the converter, and it's efficiency.
     # Compensates for the fact that some losses depend of the input current.
     def compensated_total_loss(self, X, activation_table=True, override=False):
         if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
-            return self.last_calculated_loss+self.unfeasible_points_barrier(X)
+            return self.last_calculated_loss
         else:
-            feasible = self.simulate_efficiency_independent_variables(X)
+            try:
+                self.simulate_efficiency_independent_variables(X)
+            except ValueError:
+                raise ValueError
             efficiency = 0.8
             loss = self.design_features['Po'] * (1 - efficiency) / efficiency
             error = 2
-            while error > 0.01:
+            while error > 0.1:
                 loss_last = loss
                 loss = self.total_loss(X, efficiency)
                 efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
+                if efficiency <= 0.5:
+                    efficiency = 0.5
                 error = abs(loss_last - loss)
             if math.isnan(loss) or math.isinf(loss):
-                return 0
+                raise ValueError
             else:
                 self.last_calculated_loss = loss
                 self.last_calculated_efficiency = efficiency
@@ -94,100 +73,21 @@ class BoostHalfBridgeInverter:
 
     # Calculates the total loss of the converter, and it's efficiency.
     # Compensates for the fact that some losses depend of the input current.
-    def compensated_total_loss_with_barrier(self, X, activation_table=True, override=False):
-        if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
-            return self.last_calculated_loss+self.unfeasible_points_barrier(X)
-        else:
-            feasible = self.simulate_efficiency_independent_variables(X)
-            if not feasible:
-                self.add_unfeasible_point(X)
-                return self.unfeasible_points_barrier(X)
-            efficiency = 0.8
-            loss = self.design_features['Po'] * (1 - efficiency) / efficiency
-            error = 2
-            while error > 0.01:
-                loss_last = loss
-                loss = self.total_loss(X, efficiency)
-                efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
-                error = abs(loss_last - loss)
-            if math.isnan(loss) or math.isinf(loss):
-                self.add_unfeasible_point(X)
-                return self.unfeasible_points_barrier(X)
-            else:
-                self.last_calculated_loss = loss
-                self.last_calculated_efficiency = efficiency
-                self.last_calculated_operating_point = X
-                return loss+self.unfeasible_points_barrier(X)
-
-    # Calculates the total loss of the converter, and it's efficiency.
-    # Compensates for the fact that some losses depend of the input current.
-    def compensated_total_loss_with_barrier_and_feasibility(self, X, activation_table=True, override=False):
-        if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
-            return self.last_calculated_loss+self.unfeasible_points_barrier(X)
-        else:
-            feasible = self.simulate_efficiency_independent_variables(X)
-            if not feasible:
-                self.add_unfeasible_point(X)
-                return self.unfeasible_points_barrier(X), False
-            efficiency = 0.8
-            loss = self.design_features['Po'] * (1 - efficiency) / efficiency
-            error = 2
-            while error > 0.01:
-                loss_last = loss
-                loss = self.total_loss(X, efficiency)
-                efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
-                error = abs(loss_last - loss)
-            if math.isnan(loss) or math.isinf(loss):
-                self.add_unfeasible_point(X)
-                return self.unfeasible_points_barrier(X), False
-            else:
-                self.last_calculated_loss = loss
-                self.last_calculated_efficiency = efficiency
-                self.last_calculated_operating_point = X
-                return loss+self.unfeasible_points_barrier(X), True
-
-
-    # Calculates the total loss of the converter, and it's efficiency.
-    # Compensates for the fact that some losses depend of the input current.
-    def compensated_total_loss_with_feasibility(self, X, activation_table=True, override=False):
-        if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
-            return self.last_calculated_loss
-        else:
-            feasible = self.simulate_efficiency_independent_variables(X)
-            if not feasible:
-                return 0, False
-            efficiency = 0.8
-            loss = self.design_features['Po'] * (1 - efficiency) / efficiency
-            error = 2
-            while error > 0.01:
-                loss_last = loss
-                loss = self.total_loss(X, efficiency)
-                efficiency = self.design_features['Po'] / (self.design_features['Po'] + loss)
-                error = abs(loss_last - loss)
-            if math.isnan(loss) or math.isinf(loss):
-                return 0, False
-            else:
-                self.last_calculated_loss = loss
-                self.last_calculated_efficiency = efficiency
-                self.last_calculated_operating_point = X
-                return loss, True
-
-    # Calculates the total loss of the converter, and it's efficiency.
-    # Compensates for the fact that some losses depend of the input current.
     def compensated_total_loss_separate(self, X, activation_table=True):
-        feasible = self.simulate_efficiency_independent_variables(X)
-        if not feasible:
-            return None, False
+        try:
+            self.simulate_efficiency_independent_variables(X)
+        except ValueError:
+            raise ValueError
         efficiency = 0.8
         total_loss = self.design_features['Po'] * (1 - efficiency) / efficiency
         error = 2
-        while error > 0.01:
+        losses = None
+        while error > 0.1:
             loss_last = total_loss
-            loss = self.total_loss_separate(X, efficiency)
-            total_loss = loss['Total']
+            losses, total_loss = self.total_loss_separate(X, efficiency)
             efficiency = self.design_features['Po'] / (self.design_features['Po'] + total_loss)
             error = abs(loss_last - total_loss)
-        return loss, True
+        return losses, total_loss
 
     # Calculates the total loss of the converter, for a given estimated efficiency.
     def total_loss(self, X, efficiency):
@@ -202,18 +102,17 @@ class BoostHalfBridgeInverter:
 
     # Same as 'total_loss' but returns a dictonary containing all losses.
     def total_loss_separate(self, X, efficiency):
-        output = {}
-        total = 0
+        losses = {}
+        total_loss = 0
         self.simulate_efficiency_dependent_variables(X, efficiency)
         for component in self.loss_functions:
-            output[component] = {}
+            losses[component] = {}
             for loss_type in self.loss_functions[component]:
                 if self.loss_functions_activation_map[component][loss_type]:
                     partial = self.loss_functions[component][loss_type](self, X)
-                    output[component][loss_type] = partial
-                    total = total + partial
-        output['Total'] = total
-        return output
+                    losses[component][loss_type] = partial
+                    total_loss = total_loss + partial
+        return losses, total_loss
 
 
     # Calculates all constraints.
@@ -221,29 +120,32 @@ class BoostHalfBridgeInverter:
         constraints = []
 
         # Garantees that the constrains are only calculated if the circuit has been simulated.
-        if not np.prod(X == self.last_calculated_operating_point, dtype=bool):
-            loss, feasible = self.compensated_total_loss(X, get_feasibility=True)
-        for restriction in self.restriction_functions:
-            func = restriction['function']
-            if not feasible:
-                res = -10
-            else:
+        try:
+            _ = self.compensated_total_loss(X)
+            for restriction in self.restriction_functions:
+                func = restriction['function']
                 res = func(self, X)
                 if math.isnan(res) or math.isinf(res):
-                    res=-10
-            constraints.append(res)
-        return constraints, feasiblity_flag
+                    res = -10
+                constraints.append(res)
+        except ValueError:
+            for i in range(0, len(self.restriction_functions)):
+                res = -10
+                constraints.append(res)
+        return constraints
+
 
 
     # Calculates all constraints and then the violation, and sums them.
     def total_violation(self, X):
-        constraints, feasible = self.total_constraint(X)
-        if not feasible:
-            return None, False
+        constraints = self.total_constraint(X)
         violation = 0
         for var in constraints:
             violation += max(0, -var)**2
-        return violation, True
+        return violation
+
+    # def violation_of_gain_restriction(self, X):
+        
 
     'SIMULATION'
     def simulate_efficiency_independent_variables(self, X):
@@ -257,10 +159,16 @@ class BoostHalfBridgeInverter:
         self.auxiliary_inductor.calculate_rca(fs, 100)
 
         Ts = 1 / fs
+        # print('fs = {}, Li = {}, Lk = {}'.format(fs,Li,Lk))
+        try:
+            [Vc3, Vc4, D] = Functions.vc3_vc4_d(self, fs, Lk)
+        except ValueError:
+            raise ValueError
 
-        [Vc3, Vc4, D], feasiblity_flag_D = Functions.vc3_vc4_d(self, fs, Lk)
+        # print('Vc3 = {}, Vc4 {}, D = {}'.format(Vc3,Vc4, D))
         Vo = Vc3 + Vc4
-        Functions.vo(self, fs, Lk, D)
+        if D > 0.7 or D < 0.3:
+            print(D)
 
         calculated_values = {
             'Ts': Ts,
@@ -270,12 +178,8 @@ class BoostHalfBridgeInverter:
             'D': D
         }
 
-        feasibility_flag_t3_t6 = False
-        if feasiblity_flag_D:
-            t3, t6, feasibility_flag_t3_t6 = Functions.t3t6(self, calculated_values)
-
         Po = self.design_features['Po']
-        Vi = self.design_features['Vi']['Nominal']
+        Vi = self.design_features['Vi']
         Ro = self.design_features['Ro']
         Vc1 = Vi * D / (1 - D)
         Vc2 = Vi
@@ -283,8 +187,6 @@ class BoostHalfBridgeInverter:
 
         Ipk_pos = 2 * n * Vo / (Ro * (1-D))
         Ipk_neg = -2 * n * Vo / (Ro * D)
-        Ipk_pos_1 = 2 * n * Ts * Vo / (Ro * (Ts + t3 - t6))
-        Ipk_neg_1 = 2 * n * Ts * Vo / (Ro * (t3 - t6))
 
         dIin = Vi * D * Ts / Li
         
@@ -292,15 +194,11 @@ class BoostHalfBridgeInverter:
         dBLi = Li*dIin/(self.entrance_inductor.N*self.entrance_inductor.Core.Ae)
 
         aux = {
-            't3': t3,
-            't6': t6,
             'Ro': Ro,
             'Vc1': Vc1,
             'Vc2': Vc2,
             'Ipk_pos': Ipk_pos,
             'Ipk_neg': Ipk_neg,
-            'Ipk_pos_1': Ipk_pos_1,
-            'Ipk_neg_1': Ipk_neg_1,
             'Li': Li,
             'Lk': Lk,
             'Io': Io,
@@ -323,12 +221,11 @@ class BoostHalfBridgeInverter:
         calculated_values['BmaxLk'] = LkVrms/(self.auxiliary_inductor.Core.Ae*fs*7*self.auxiliary_inductor.N)
 
         self.calculated_values = calculated_values
-        return (feasiblity_flag_D and feasibility_flag_t3_t6)
 
     def simulate_efficiency_dependent_variables(self, X, efficiency):
         
         Li = X[1]
-        Iin = (self.design_features['Po'] / (self.design_features['Vi']['Nominal']*efficiency))
+        Iin = (self.design_features['Po'] / (self.design_features['Vi']*efficiency))
         dIin = self.calculated_values['dIin']
         Ipk_pos = self.calculated_values['Ipk_pos']
         Ipk_neg = self.calculated_values['Ipk_neg']
@@ -344,7 +241,8 @@ class BoostHalfBridgeInverter:
             'BmaxLi': BmaxLi,
             'dIin': dIin,
             'Is1max': Is1max,
-            'Is2max': Is2max
+            'Is2max': Is2max,
+            'Efficiency': efficiency
         }
         self.calculated_values.update(aux)
         self.calculated_values['C1Irms'] = Functions.c1_irms(self, self.calculated_values)
@@ -353,37 +251,6 @@ class BoostHalfBridgeInverter:
         self.calculated_values['S2Irms'] = Functions.s2_irms(self, self.calculated_values)
         self.calculated_values['EntranceInductorHarmonics'] = Functions.InputCurrentHarmonics(self, self.calculated_values)
         self.calculated_values['LiIrms'] = Functions.LiIrms(self, self.calculated_values)
-
-    'AUXILIARY'
-    def summarize(self):
-        print("\n")
-        print("Resumo do Conversor\n")
-        print("Transformador")
-        print("- Espiras [{},{}]".format(self.transformer.Primary.N, self.transformer.Secondary.N))
-        print("- Condutores [{},{}]".format(self.transformer.Primary.Ncond, self.transformer.Secondary.Ncond))
-        print("- Cabo [{},{}]".format(self.transformer.Primary.Cable.Name, self.transformer.Secondary.Cable.Name))
-        print("- Núcleo {}".format(self.transformer.Core.Name))
-        print("Indutor de Entrada")
-        print("- Espiras {}".format(self.entrance_inductor.N))
-        print("- Condutores {}".format(self.entrance_inductor.Ncond))
-        print("- Cabo {}".format(self.entrance_inductor.Cable.Name))
-        print("- Núcleo {}".format(self.entrance_inductor.Core.Name))
-        print("Indutor Auxiliar")
-        print("- Espiras {}".format(self.auxiliary_inductor.N))
-        print("- Condutores {}".format(self.auxiliary_inductor.Ncond))
-        print("- Cabo {}".format(self.auxiliary_inductor.Cable.Name))
-        print("- Núcleo {}".format(self.auxiliary_inductor.Core.Name))
-        print("Chaves")
-        print("-S1 - {}".format(self.switches[0].Name))
-        print("-S2 - {}".format(self.switches[1].Name))
-        print("Capacitores")
-        print("-C1 - {}".format(self.capacitors[0].Name))
-        print("-C2 - {}".format(self.capacitors[1].Name))
-        print("-C3 - {}".format(self.capacitors[2].Name))
-        print("-C4 - {}".format(self.capacitors[3].Name))
-        print("Diodos")
-        print("-D3 - {}".format(self.diodes[0].Name))
-        print("-D4 - {}".format(self.diodes[1].Name))
 
     def get_parameter(self, name):
         if name == 'primary_cable':
@@ -485,5 +352,39 @@ class BoostHalfBridgeInverter:
         else:
             raise Exception(name + " is not a defined parameter")
 
+    def __repr__(self):
+        representation = "\n"
+        representation += "Converter Boost Half Bridge\n"
+        representation += "Transformer\n"
+        representation += "- Espiras [{},{}]\n".format(self.transformer.Primary.N, self.transformer.Secondary.N)
+        representation += "- Condutores [{},{}]\n".format(self.transformer.Primary.Ncond, self.transformer.Secondary.Ncond)
+        representation += "- Cabo [{},{}]\n".format(self.transformer.Primary.Cable.get_name(), self.transformer.Secondary.Cable.get_name())
+        representation += "- Núcleo {}\n".format(self.transformer.Core.get_name())
+        representation += "Indutor de Entrada\n"
+        representation += "- Espiras {}\n".format(self.entrance_inductor.N)
+        representation += "- Condutores {}\n".format(self.entrance_inductor.Ncond)
+        representation += "- Cabo {}\n".format(self.entrance_inductor.Cable.get_name())
+        representation += "- Núcleo {}\n".format(self.entrance_inductor.Core.get_name())
+        representation += "Indutor Auxiliar\n"
+        representation += "- Espiras: {}\n".format(self.auxiliary_inductor.N)
+        representation += "- Condutores: {}\n".format(self.auxiliary_inductor.Ncond)
+        representation += "- Cabo: {}\n".format(self.auxiliary_inductor.Cable.get_name())
+        representation += "- Núcleo {}\n".format(self.auxiliary_inductor.Core.get_name())
+        representation += "Chaves\n"
+        representation += "-S1 - {}\n".format(self.switches[0].get_name())
+        representation += "-S2 - {}\n".format(self.switches[1].get_name())
+        representation += "Capacitores\n"
+        representation += "-C1 - {}\n".format(self.capacitors[0].get_name())
+        representation += "-C2 - {}\n".format(self.capacitors[1].get_name())
+        representation += "-C3 - {}\n".format(self.capacitors[2].get_name())
+        representation += "-C4 - {}\n".format(self.capacitors[3].get_name())
+        representation += "Diodos\n"
+        representation += "-D3 - {}\n".format(self.diodes[0].get_name())
+        representation += "-D4 - {}\n".format(self.diodes[1].get_name())
+        return representation
+
     def get_simulated_values(self):
         return self.calculated_values
+
+    def gain_restriction(self, x):
+        return [Restrictions.gain_restriction(self, x), Restrictions.gain_restriction_2(self, x)]

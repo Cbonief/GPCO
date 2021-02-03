@@ -1,19 +1,50 @@
+import datetime
+import json
 import sys
 from functools import partial
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from GUI.MainWindow import Ui_MainWindow
-from GUI.selectComponentWindow import Ui_ComponentSelectWindow
-from GUI.configSecurityWindow import Ui_configSecurityWindow
-
-from Optimizer import *
-
-import datetime
 
 import FileHandler
-import json
+from GUI.MainWindow import Ui_MainWindow
+from GUI.configSecurityWindow import Ui_configSecurityWindow
+from GUI.inductorCreateWindow import Ui_CreateInductorWindow
+from GUI.selectComponentWindow import Ui_ComponentSelectWindow
+from GUI.selectSingleComponentWindow import Ui_SingleComponentSelectWindow
+from GUI.inductorCreateWindow import Ui_CreateInductorWindow
+
+ComponentsSelectedPT = {
+    'Capacitors': 'Capacitores Selecionados',
+    'Switches': 'Chaves Selecionadas',
+    'Cores': 'Núcleos Selecionados',
+    'Cables': 'Cabos Selecionados',
+    'Diodes': 'Diodos Selecionados',
+}
+
+ComponentsSelectedPT3 = {
+    'Li': 'Indutor de Entrada',
+    'Lk': 'Indutor Auxiliar'
+}
+
+ComponentsSelectedPT2 = {
+    'C1': 'Selecione C1',
+    'C2': 'Selecione C2',
+    'C3': 'Selecione C3',
+    'C4': 'Selecione C4',
+    'D3': 'Selecione D3',
+    'D4': 'Selecione D4',
+    'S1': 'Selecione S1',
+    'S2': 'Selecione S2',
+    'LiCore': 'Selecione o Núcleo de Li',
+    'LiCable': 'Selecione o Cabo de Li',
+    'LkCore': 'Selecione o Núcleo de Lk',
+    'LkCable': 'Selecione o Cabo de Lk',
+    'TrPrimaryCable': 'Selecione o Cabo do Primário',
+    'TrSecondaryCable': 'Selecione o Cabo do Secundário',
+    'TrCore': 'Selecione o Núcleo do Transformador'
+}
 
 
 class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -28,7 +59,13 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.switches_database = FileHandler.load_all_switches()
         self.capacitors_database = FileHandler.load_all_capacitors()
         self.diodes_database = FileHandler.load_all_diodes()
-        self.dissipators_database = FileHandler.load_all_dissipators()
+        self.components_database = {
+            'Cores': self.cores_database,
+            'Cables': self.cables_database,
+            'Switches': self.switches_database,
+            'Diodes': self.diodes_database,
+            'Capacitors': self.capacitors_database
+        }
 
         self.converter_configured = True
         self.security_params_configured = True
@@ -39,7 +76,6 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             'Cores': [],
             'Cables': [],
             'Diodes': [],
-            'Dissipators': []
         }
         self.selected_components = {
             'Capacitors': [],
@@ -47,21 +83,69 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             'Cores': [],
             'Cables': [],
             'Diodes': [],
-            'Dissipators': []
         }
+
+        self.available_components_specific = {
+            'C1': [],
+            'C2': [],
+            'C3': [],
+            'C4': [],
+            'D3': [],
+            'D4': [],
+            'S1': [],
+            'S2': [],
+            'LiCore': [],
+            'LiCable': [],
+            'LkCore': [],
+            'LkCable': [],
+            'TrPrimaryCable': [],
+            'TrSecondaryCable': [],
+            'TrCore': []
+        }
+
+        self.selected_components_specific = {
+            'C1': [],
+            'C2': [],
+            'C3': [],
+            'C4': [],
+            'D3': [],
+            'D4': [],
+            'S1': [],
+            'S2': [],
+            'LiCore': [],
+            'LiCable': [],
+            'LkCore': [],
+            'LkCable': [],
+            'TrPrimaryCable': [],
+            'TrSecondaryCable': [],
+            'TrCore': []
+        }
+
         for name in self.capacitors_database:
             self.available_components['Capacitors'].append(name)
-            print(self.capacitors_database[name].Vmax)
+            self.available_components_specific['C1'].append(name)
+            self.available_components_specific['C2'].append(name)
+            self.available_components_specific['C3'].append(name)
+            self.available_components_specific['C4'].append(name)
         for name in self.switches_database:
             self.available_components['Switches'].append(name)
+            self.available_components_specific['S1'].append(name)
+            self.available_components_specific['S2'].append(name)
         for name in self.cores_database:
             self.available_components['Cores'].append(name)
+            self.available_components_specific['LiCore'].append(name)
+            self.available_components_specific['LkCore'].append(name)
+            self.available_components_specific['TrCore'].append(name)
         for name in self.cables_database:
             self.available_components['Cables'].append(name)
+            self.available_components_specific['LiCable'].append(name)
+            self.available_components_specific['LkCable'].append(name)
+            self.available_components_specific['TrPrimaryCable'].append(name)
+            self.available_components_specific['TrSecondaryCable'].append(name)
         for name in self.diodes_database:
             self.available_components['Diodes'].append(name)
-        for name in self.dissipators_database:
-            self.available_components['Dissipators'].append(name)
+            self.available_components_specific['D3'].append(name)
+            self.available_components_specific['D4'].append(name)
 
         # Variable needed to open a new window in the app.
         self.window = None
@@ -73,11 +157,26 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.component_being_selected = None
         self.select_component_window = None
         self.config_security_window = None
+        self.select_specific_component_window = None
+
+        self.select_single_component_viewport = QtWidgets.QMainWindow()
+        self.select_single_component_window = Ui_SingleComponentSelectWindow()
+        self.select_single_component_window.setupUi(self.select_single_component_viewport)
+        self.select_single_component_window.select_button.clicked.connect(self.add_single_component)
+        self.select_single_component_window.remove_button.clicked.connect(self.remove_single_component)
+
+        self.inductor_being_created = None
+        self.create_inductor_viewport = QtWidgets.QMainWindow()
+        self.create_inductor_window = Ui_CreateInductorWindow()
+        self.create_inductor_window.setupUi(self.create_inductor_viewport)
+        self.create_inductor_window.pushButtonVerify.clicked.connect(self.verify_inductor)
+
+        self.EntranceInductor = None
+        self.AuxiliaryInductor = None
 
         self.circuit_features = {
             'Vo': 0.0,
-            'Vi': {'Min': 0.0, 'Nominal': 0.0, 'Max': 0.0},
-            'D': {'Min': 0.0, 'Nominal': 0.0, 'Max': 0.0},
+            'Vi': 0.0,
             'dIin_max': 0.0,
             'dVo_max': 0.0,
             'Po': 0.0,
@@ -86,8 +185,7 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         }
         self.circuit_features_input_table = {
             'Vo': self.input_Vo,
-            'Vi': {'Min': self.input_VinMin, 'Nominal': self.input_Vin, 'Max': self.input_VinMax},
-            'D': {'Min': self.input_Dmin, 'Nominal': self.input_D, 'Max': self.input_Dmax},
+            'Vi': self.input_Vin,
             'dIin_max': self.input_DeltaIin,
             'dVo_max': self.input_DeltaVo,
             'Po': self.input_Po,
@@ -236,7 +334,7 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.select_component_window.setupUi(self.window)
         self.select_component_window.add_button.clicked.connect(self.add_component)
         self.select_component_window.remove_button.clicked.connect(self.remove_component)
-        self.select_component_window.label.setText('Selecionados')
+        self.select_component_window.label.setText(ComponentsSelectedPT[component_being_selected])
 
         self.model_available = QStandardItemModel(self.select_component_window.list_available)
         for name in self.available_components[component_being_selected]:
@@ -257,6 +355,32 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.select_component_window.list_selected.clicked.connect(self.component_selected_clicked)
             finally:
                 self.window.show()
+
+    def open_select_single_component_window(self, component_being_selected):
+        self.selected_item = None
+
+        self.component_being_selected = component_being_selected
+        self.select_single_component_window.label.setText(ComponentsSelectedPT2[component_being_selected])
+
+        self.model_available = QStandardItemModel(self.select_single_component_window.list_available)
+        for name in self.available_components_specific[component_being_selected]:
+            item = QStandardItem(name)
+            item.setEditable(False)
+            self.model_available.appendRow(item)
+        self.select_single_component_window.list_available.setModel(self.model_available)
+        try:
+            self.select_single_component_window.list_available.clicked.connect(self.component_available_clicked)
+        finally:
+            self.model_selected = QStandardItemModel(self.select_single_component_window.list_selected)
+            for name in self.selected_components_specific[component_being_selected]:
+                item = QStandardItem(name)
+                item.setEditable(False)
+                self.model_selected.appendRow(item)
+            self.select_single_component_window.list_selected.setModel(self.model_selected)
+            try:
+                self.select_single_component_window.list_selected.clicked.connect(self.component_selected_clicked)
+            finally:
+                self.select_single_component_viewport.show()
 
     def component_available_clicked(self, index):
         self.selected_item = self.model_available.itemFromIndex(index)
@@ -303,6 +427,90 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             self.select_component_window.list_selected.setModel(self.model_selected)
             self.selected_item = None
 
+    def add_single_component(self):
+        if self.selected_item is not None and len(self.selected_components_specific[self.component_being_selected]) == 0:
+            self.available_components_specific[self.component_being_selected].remove(self.selected_item.text())
+            self.selected_components_specific[self.component_being_selected].append(self.selected_item.text())
+            self.model_available = QStandardItemModel(self.select_single_component_window.list_available)
+            for name in self.available_components_specific[self.component_being_selected]:
+                item = QStandardItem(name)
+                item.setEditable(False)
+                self.model_available.appendRow(item)
+            self.select_single_component_window.list_available.setModel(self.model_available)
+
+            self.model_selected = QStandardItemModel(self.select_single_component_window.list_selected)
+            for name in self.selected_components_specific[self.component_being_selected]:
+                item = QStandardItem(name)
+                item.setEditable(False)
+                self.model_selected.appendRow(item)
+            self.select_single_component_window.list_selected.setModel(self.model_selected)
+            self.select_single_component_window.list_selected.clicked.connect(self.component_selected_clicked)
+            self.selected_item = None
+
+    def remove_single_component(self):
+        if self.selected_item is not None:
+            self.available_components_specific[self.component_being_selected].append(self.selected_item.text())
+            self.selected_components_specific[self.component_being_selected].remove(self.selected_item.text())
+            self.model_available = QStandardItemModel(self.select_single_component_window.list_available)
+            for name in self.available_components_specific[self.component_being_selected]:
+                item = QStandardItem(name)
+                item.setEditable(False)
+                self.model_available.appendRow(item)
+            self.select_single_component_window.list_available.setModel(self.model_available)
+
+            self.model_selected = QStandardItemModel(self.select_single_component_window.list_selected)
+            for name in self.selected_components_specific[self.component_being_selected]:
+                item = QStandardItem(name)
+                item.setEditable(False)
+                self.model_selected.appendRow(item)
+            self.select_single_component_window.list_selected.setModel(self.model_selected)
+            self.selected_item = None
+
+    def open_create_inductor_window(self, inductor_name):
+        self.inductor_being_created = inductor_name
+        self.create_inductor_window.pushButtonCoreSel.clicked.connect(partial(self.open_select_single_component_window, inductor_name + 'Core'))
+        self.create_inductor_window.pushButtonCableSel.clicked.connect(partial(self.open_select_single_component_window, inductor_name + 'Cable'))
+        self.create_inductor_viewport.setWindowTitle(ComponentsSelectedPT3[inductor_name])
+        self.create_inductor_viewport.show()
+
+    def verify_inductor(self):
+        print(self.create_inductor_window.spinbox_N.value())
+        print(self.create_inductor_window.spinbox_Np.value())
+        if self.create_inductor_window.spinbox_N.value() != 0 and self.create_inductor_window.spinbox_Np.value() != 0 and len(self.selected_components_specific[self.inductor_being_created+'Core']) > 0 and len(self.selected_components_specific[self.inductor_being_created+'Cable']) > 0:
+            print('ok')
+            new_inductor = Inductor(self.cores_database[self.selected_components_specific[self.inductor_being_created+'Core'][0]], self.cables_database[self.selected_components_specific[self.inductor_being_created+'Cable'][0]], self.create_inductor_window.spinbox_N.value(), self.create_inductor_window.spinbox_Np.value())
+            map = {
+                'Li': 'EntranceInductor',
+                'Lk': 'AuxiliaryInductor'
+            }
+            print('ok')
+            if new_inductor.is_feasible(self.safety_params['ku'][map[self.inductor_being_created]]):
+                print('Ok')
+                warning = QMessageBox()
+                warning.setWindowTitle("FIM")
+                warning.setText("Indutor Salvo.")
+                warning.setIcon(QMessageBox.Warning)
+                warning.exec_()
+                if self.inductor_being_created == 'Li':
+                    self.EntranceInductor = new_inductor
+                else:
+                    self.AuxiliaryInductor = new_inductor
+            else:
+                warning = QMessageBox()
+                warning.setWindowTitle("FIM")
+                warning.setText("O indutor criado ocupa mais que o permitido por kuAw")
+                warning.setIcon(QMessageBox.Warning)
+                warning.exec_()
+        else:
+            warning = QMessageBox()
+            warning.setWindowTitle("ATENÇÃO")
+            warning.setText("Algum Parâmetro do Indutor não foi configurado.")
+            warning.setIcon(QMessageBox.Warning)
+            warning.exec_()
+
+    def testFunction(self):
+        print(self.tabWidget.currentIndex())
+
     def connect_actions(self):
         self.pushButtonCreateConverter.clicked.connect(self.save_circuit_features)
         self.optimize_button.clicked.connect(self.optimize)
@@ -310,13 +518,27 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButtonCapSel.clicked.connect(partial(self.open_select_component_window, 'Capacitors'))
         self.pushButtonCoreSel.clicked.connect(partial(self.open_select_component_window, 'Cores'))
         self.pushButtonDiodeSel.clicked.connect(partial(self.open_select_component_window, 'Diodes'))
-        self.pushButtonDissSel.clicked.connect(partial(self.open_select_component_window, 'Disspators'))
         self.pushButtonSwitchSel.clicked.connect(partial(self.open_select_component_window, "Switches"))
+
+        self.pushButtonSelC1.clicked.connect(partial(self.open_select_single_component_window, 'C1'))
+        self.pushButtonSelC2.clicked.connect(partial(self.open_select_single_component_window, 'C2'))
+        self.pushButtonSelC3.clicked.connect(partial(self.open_select_single_component_window, 'C3'))
+        self.pushButtonSelC4.clicked.connect(partial(self.open_select_single_component_window, 'C4'))
+        self.pushButtonSelD3.clicked.connect(partial(self.open_select_single_component_window, "D3"))
+        self.pushButtonSelD4.clicked.connect(partial(self.open_select_single_component_window, "D4"))
+        self.pushButtonSelS1.clicked.connect(partial(self.open_select_single_component_window, "S1"))
+        self.pushButtonSelS2.clicked.connect(partial(self.open_select_single_component_window, "S2"))
+
+        self.pushButtonSelLi.clicked.connect(partial(self.open_create_inductor_window, 'Li'))
+        self.pushButtonSelLk.clicked.connect(partial(self.open_create_inductor_window, 'Lk'))
 
         self.actionNew.triggered.connect(self.create_file)
         self.actionSave.triggered.connect(self.save_file)
         self.actionOpen.triggered.connect(self.open_file)
         self.actionSecurityConfig.triggered.connect(self.open_security_config_window)
+
+
+        self.testButton.clicked.connect(self.testFunction)
 
     def get_components(self):
         components = {
@@ -324,8 +546,7 @@ class Aplicativo(QtWidgets.QMainWindow, Ui_MainWindow):
             'Switches': [],
             'Cores': [],
             'Cables': [],
-            'Diodes': [],
-            'Dissipators': []
+            'Diodes': []
         }
         for name in self.selected_components['Capacitors']:
             components['Capacitors'].append(self.capacitors_database[name])

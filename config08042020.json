@@ -19,16 +19,14 @@
     "Diodes": [
       "D3",
       "D4"
-    ],
-    "Dissipators": []
+    ]
   },
   {
     "Capacitors": [],
     "Switches": [],
     "Cores": [],
     "Cables": [],
-    "Diodes": [],
-    "Dissipators": []
+    "Diodes": []
   },
   {
     "Vc": 2.0,
@@ -43,18 +41,9 @@
   },
   {
     "Vo": 400.0,
-    "Vi": {
-      "Min": 12.0,
-      "Nominal": 17.4,
-      "Max": 20.0
-    },
-    "D": {
-      "Min": 0.3,
-      "Nominal": 0.55,
-      "Max": 0.7
-    },
+    "Vi": 17.4,
     "dIin_max": 10.0,
-    "dVo_max": 10.0,
+    "dVo_max": 2.0,
     "Po": 130.0,
     "Jmax": 450.0,
     "Ro": 1230.7692307692307
