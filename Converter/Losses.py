@@ -3,7 +3,7 @@ from Converter.auxiliary_functions import *
 
 def Transformer_Core_Loss(obj, X):
     fs = X[0]
-    k1 = obj.design_features['Bmax']['Transformer'] ** obj.transformer.Core.Beta
+    k1 = obj.features['Bmax']['Transformer'] ** obj.transformer.Core.Beta
     k2 = obj.transformer.Core.Ve*obj.transformer.Core.Kc
     core_loss = 1e3*k1*k2*(fs**obj.transformer.Core.Alpha)
     return core_loss
@@ -121,7 +121,7 @@ def Switch1_Loss(obj, X):
     fs = X[0]
     imax = obj.calculated_values['Is1max']
     irms = obj.calculated_values['S1Irms']
-    Vi = obj.design_features['Vi']
+    Vi = obj.features['Vi']
     D = obj.calculated_values['D']
     vmax = Vi/(1-D)
     loss = (1/2)*imax*vmax*obj.switches[0].Toff*fs + obj.switches[0].Rdson*irms**2
@@ -132,7 +132,7 @@ def Switch2_Loss(obj, X):
     fs = X[0]
     imax = obj.calculated_values['Is2max']
     irms = obj.calculated_values['S2Irms']
-    Vi = obj.design_features['Vi']
+    Vi = obj.features['Vi']
     D = obj.calculated_values['D']
     vmax = Vi / (1 - D)
     loss = (1 / 2) * imax * vmax * obj.switches[1].Toff * fs + obj.switches[1].Rdson*irms**2

@@ -7,13 +7,13 @@ from Converter.fqs import *
 # Calcula Vc3, Vc4 e a razão cíclica necessária para obter o valor de Vo desejado.
 def vc3_vc4_d(obj, fs, Lk):
     start = datetime.datetime.now()
-    Vi = obj.design_features['Vi']
+    Vi = obj.features['Vi']
     n = obj.transformer.Ratio
-    Ro = obj.design_features['Ro']
-    Vo = obj.design_features['Vo']
+    Ro = obj.features['Ro']
+    Vo = obj.features['Vo']
     k = 2*fs*Lk*n**2/Ro
-    b = -obj.design_features['D_Expected'] - 1
-    c = 2*k + obj.design_features['D_Expected']
+    b = -obj.features['D_Expected'] - 1
+    c = 2*k + obj.features['D_Expected']
     d = -2*k
     e = k
 

@@ -20,8 +20,8 @@ The superficial layer uses a genetic algorithm to handle the discrete variables,
   - [3. Converter Implementation](#2-converter-implementation)
   	- [3.1 Components](#31-components)
   	- [3.2 The Model](#32-the-model)
-	  - [3.3 Losses](#33-losses)
-	  - [3.4 Restrictions](#34-restrictions)
+	- [3.3 Losses](#33-losses)
+	- [3.4 Restrictions](#34-restrictions)
   - [4. Future Work](#4-future-work)
 
 

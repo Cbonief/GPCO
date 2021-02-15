@@ -8,7 +8,7 @@
     <x>0</x>
     <y>0</y>
     <width>1080</width>
-    <height>801</height>
+    <height>822</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -212,7 +212,7 @@
      <item>
       <widget class="QLabel" name="label_ConfiguracoesDoOtimizador_3">
        <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Parâmetros Desejáveis&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:10pt;&quot;&gt;Parâmetros de Projeto&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -589,7 +589,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="pushButtonCreateConverter">
+        <widget class="QPushButton" name="save_design_features">
          <property name="text">
           <string>Salvar Parâmetros</string>
          </property>
@@ -1578,45 +1578,23 @@
           </item>
          </layout>
         </widget>
+        <widget class="QPushButton" name="optimize_button">
+         <property name="geometry">
+          <rect>
+           <x>110</x>
+           <y>260</y>
+           <width>75</width>
+           <height>23</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Otimizar</string>
+         </property>
+        </widget>
        </widget>
       </widget>
      </item>
     </layout>
-   </widget>
-   <widget class="QPushButton" name="optimize_button">
-    <property name="geometry">
-     <rect>
-      <x>130</x>
-      <y>740</y>
-      <width>75</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Otimizar</string>
-    </property>
-   </widget>
-   <widget class="QTextEdit" name="textEdit">
-    <property name="enabled">
-     <bool>true</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>380</x>
-      <y>40</y>
-      <width>240</width>
-      <height>190</height>
-     </rect>
-    </property>
-    <property name="maximumSize">
-     <size>
-      <width>240</width>
-      <height>190</height>
-     </size>
-    </property>
-    <property name="readOnly">
-     <bool>true</bool>
-    </property>
    </widget>
    <widget class="QLabel" name="label">
     <property name="enabled">
@@ -1624,7 +1602,7 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>380</x>
+      <x>450</x>
       <y>20</y>
       <width>121</width>
       <height>16</height>
@@ -1645,6 +1623,16 @@
     </property>
     <property name="text">
      <string>Otimizar</string>
+    </property>
+   </widget>
+   <widget class="QTextBrowser" name="converterDescription">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>50</y>
+      <width>256</width>
+      <height>192</height>
+     </rect>
     </property>
    </widget>
   </widget>

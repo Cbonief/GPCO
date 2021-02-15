@@ -116,21 +116,24 @@ class Inductor(Component):
         self.Cable = cable
         self.N = N
         self.Ncond = Ncond
+        self.Penetration_base = None
+        self.NC = None
+        self.FSD = None
+        self.A_base = None
+        self.rcc = None
+        self.rca = None
+        self.used_area = self.Cable.S * self.N * self.Ncond
 
+    def calculate_rcc(self):
         self.Penetration_base = np.sqrt(self.Cable.Rho / (np.pi * self.Cable.Ur * uo))
-
-        dsq = cable.Dcu*np.sqrt(np.pi/Ncond)/2
-        self.FSD = FSD[Ncond - 1]
-        self.NC = np.ceil(self.FSD*self.Cable.D * N / self.Core.Bj)
-        ada = (N/self.NC)*dsq/self.Core.Bj
+        dsq = self.Cable.Dcu*np.sqrt(np.pi/self.Ncond)/2
+        self.FSD = FSD[self.Ncond - 1]
+        self.NC = np.ceil(self.FSD*self.Cable.D * self.N / self.Core.Bj)
+        ada = (self.N/self.NC)*dsq/self.Core.Bj
         dn_base = self.Penetration_base/np.sqrt(ada)
         self.A_base = dsq/dn_base
         self.rcc = self.Cable.Rho * (self.Core.Lt + 8 * self.NC * self.Cable.D * self.FSD) * self.N / (
                     self.Ncond * self.Cable.Scu)
-        
-        self.rca = None
-
-        self.used_area = cable.S * N * Ncond
 
     # Calcula a RCA do conversor com a metodologia de Dowell. Utiliza um fo fundamental e um número 'noc' de termos
     # serão calculados.
@@ -151,33 +154,10 @@ class Inductor(Component):
         return (self.N**2)*uo*self.Core.Ae/gap_width
 
     def is_feasible(self, ku):
-        return self.used_area / ku >= self.Core.Aw
+        return self.Core.Aw * ku >= self.used_area
 
-    def recalculate_winding(self, ku):
-        resolved = False
-        n = 0
-        ncond = 0
-        while not resolved:
-            n = np.random.randint(1, 200)
-            ncond = np.random.randint(1, 50)
-            inductor = Inductor(self.Core, self.Cable, n, ncond)
-            resolved = inductor.is_feasible(ku)
-        self.N = n
-        self.Ncond = ncond
-
-    def set_parameter(self, name, value, ku=None):
-        if name == 'N':
-            self.N = value
-        elif name == 'Ncond':
-            self.Ncond = value
-
-        self.used_area = self.Cable.S * self.N * self.Ncond
-        if ku:
-            if not self.is_feasible(ku):
-                if name == 'N':
-                    self.set_parameter(name, self.Core.Aw*ku/(self.Ncond*self.Cable.S))
-                elif name == 'Ncond':
-                    self.set_parameter(name, self.Core.Aw*ku/(self.N*self.Cable.S))
+    def utilization_factor(self, ku):
+        return self.used_area / (ku*self.Core.Aw)
 
 
 class Transformer(Component):
@@ -192,47 +172,8 @@ class Transformer(Component):
     def is_feasible(self, ku):
         return self.used_area / ku > self.Core.Aw
 
-    def recalculate_winding(self, ku, circuit_features=None):
-        resolved = False
-        while not resolved:
-            n = [np.random.randint(1, 200), np.random.randint(1, 200)]
-            if circuit_features:
-                while not found:
-                    n = [np.random.randint(1, 200), np.random.randint(1, 200)]
-                    a = circuit_features['Vi']['Nominal'] >= circuit_features['Vo']
-                    b = n[0] >= n[1]
-                    found = (a and b) or (not a and not b)
-            ncond = [np.random.randint(1, 50), np.random.randint(1, 50)]
-            transformer = Transformer(self.Core, [self.Primary.Cable, self.Secondary.Cable], n, ncond)
-            resolved = transformer.is_feasible(ku)
-            if resolved:
-                self.set_parameter('Np', n[0])
-                self.set_parameter('Ns', n[1])
-                self.set_parameter('Ncondp', ncond[0])
-                self.set_parameter('Nconds', ncond[1])
-
-    def set_parameter(self, name, value, ku=None):
-        if name == 'Np':
-            self.Primary.set_parameter('N', value)
-        elif name == 'Ns':
-            self.Secondary.set_parameter('Ncond', value)
-        elif name == 'Ncondp':
-            self.Primary.set_parameter('N', value)
-        elif name == 'Nconds':
-            self.Secondary.set_parameter('Ncond', value)
-
-        self.used_area = self.Primary.used_area + self.Secondary.used_area
-        if ku:
-            if not self.is_feasible(ku):
-                if name == 'Np':
-                    self.set_parameter(name, (self.Core.Aw*ku - self.Secondary.used_area)/(self.Primary.Ncond*self.Primary.Cable.S))
-                elif name == 'Ns':
-                    self.set_parameter(name, (self.Core.Aw*ku - self.Primary.used_area)/(self.Secondary.Ncond*self.Secondary.Cable.S))
-                elif name == 'Ncondp':
-                    self.set_parameter(name, (self.Core.Aw*ku - self.Secondary.used_area)/(self.Primary.N*self.Primary.Cable.S))
-                elif name == 'Nconds':
-                    self.set_parameter(name, (self.Core.Aw * ku - self.Primary.used_area) / (self.Secondary.N * self.Secondary.Cable.S))
-
+    def utilization_factor(self, ku):
+        return self.used_area / (ku*self.Core.Aw)
 
 
 # Funções auxiliares necessárias para calcular a RCA de um indutor.

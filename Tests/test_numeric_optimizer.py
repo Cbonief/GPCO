@@ -54,22 +54,22 @@ converter = BoostHalfBridgeInverter(design_features, safety_params, Trafo, Li, L
 #
 # print(converter.compensated_total_loss(output))
 
-output = [
-    30078.270600313954,
-    0.0001798892307692308,
-    3.9207076316800625e-08
-]
-
-brute_force = [
-    29652.173190796,
-    0.00018370766865114305,
-    4.003930949055375e-08
-]
-
-error_percentage = [(b-o)/b for b, o in zip(brute_force, output)]
-print(error_percentage)
-print(converter.compensated_total_loss(output))
-print(converter.compensated_total_loss(brute_force))
+# output = [
+#     30078.270600313954,
+#     0.0001798892307692308,
+#     3.9207076316800625e-08
+# ]
+#
+# brute_force = [
+#     29652.173190796,
+#     0.00018370766865114305,
+#     4.003930949055375e-08
+# ]
+#
+# error_percentage = [(b-o)/b for b, o in zip(brute_force, output)]
+# print(error_percentage)
+# print(converter.compensated_total_loss(output))
+# print(converter.compensated_total_loss(brute_force))
 
 # best_loss = np.inf
 # solution = None

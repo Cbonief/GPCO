@@ -1,5 +1,5 @@
 from Converter.auxiliary_functions import *
-from FileHandler import loadFSD
+from GUI.Handlers.FileHandler import loadFSD
 from scipy.optimize import minimize
 import math
 

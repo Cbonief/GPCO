@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CreateInductorWindow</class>
- <widget class="QMainWindow" name="CreateInductorWindow">
+ <class>CreateTransformerWindow</class>
+ <widget class="QMainWindow" name="CreateTransformerWindow">
   <property name="geometry">
    <rect>
     <x>0</x>

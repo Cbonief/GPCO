@@ -43,14 +43,14 @@ def optimize_converter(converter, subroutine_iteration=100, epochs=2, algorithm=
             print(best)
             return [best, optimization_result.success, optimization_result.x]
         else:
-            return [2*converter.design_features['Po'], False, []]
+            return [2 * converter.features['Po'], False, []]
     else:
         return [None, False, []]
 
 
 # Uses a penalty method to find a feasible point, this feasible point is used as a starting point for the
 # numeric optimizer.
-def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=10):
+def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=50):
     if bounds is None:
         bounds = determine_bounds(converter)
 
@@ -91,11 +91,6 @@ def find_feasible_gain_operating_point(converter, bounds=None):
     if bounds is None:
         bounds = determine_bounds(converter)
 
-    Po = converter.design_features['Po']
-    Vo = converter.design_features['Vo']
-    Vi = converter.design_features['Vi']
-    n = converter.transformer.Ratio
-
     iteration = 0
     x0 = np.array([random_in_range(bounds[0]), random_in_range(bounds[1]), random_in_range(bounds[2])])
     while not gain_restriction_feasibility(converter, x0) and iteration < 100:
@@ -105,11 +100,11 @@ def find_feasible_gain_operating_point(converter, bounds=None):
 
 
 def determine_bounds(converter):
-    Dnominal = converter.design_features['D_Expected']
-    Vnominal = converter.design_features['Vi']
-    Po = converter.design_features['Po']
-    Vo = converter.design_features['Vo']
-    Ro = converter.design_features['Ro']
+    Dnominal = converter.features['D_Expected']
+    Vnominal = converter.features['Vi']
+    Po = converter.features['Po']
+    Vo = converter.features['Vo']
+    Ro = converter.features['Ro']
     n = converter.transformer.Ratio
 
     gap_width_bound = [1e-4, 3e-2]
@@ -123,10 +118,10 @@ def determine_bounds(converter):
     ]
     frequency_lower_bounds = [
         (((1 - Dnominal) ** 2) / (Vnominal ** 2 * Dnominal)) * Po / (
-                    4 * converter.capacitors[0].C * converter.design_features['dVc1']),
-        ((1 - Dnominal) / Vnominal ** 2) * Po / (converter.capacitors[1].C * converter.design_features['dVc2']),
-        Dnominal * Po / (converter.capacitors[2].C * converter.design_features['dVo_max'] * Vo ** 2),
-        (1 - Dnominal) * Po / (converter.capacitors[3].C * converter.design_features['dVo_max'] * Vo ** 2),
+                    4 * converter.capacitors[0].C * converter.features['dVc1']),
+        ((1 - Dnominal) / Vnominal ** 2) * Po / (converter.capacitors[1].C * converter.features['dVc2']),
+        Dnominal * Po / (converter.capacitors[2].C * converter.features['dVo_max'] * Vo ** 2),
+        (1 - Dnominal) * Po / (converter.capacitors[3].C * converter.features['dVo_max'] * Vo ** 2),
         100
     ]
     frequency_lower_bound = (1 + shrinking_factor) * max(frequency_lower_bounds)
@@ -137,9 +132,9 @@ def determine_bounds(converter):
         converter.entrance_inductor.get_inductance(gap_width_bound[1])
     ]
     Li_upper_bounds = [
-        Vnominal * converter.design_features['Bmax'][
+        Vnominal * converter.features['Bmax'][
             'EntranceInductor'] * converter.entrance_inductor.N * converter.entrance_inductor.Core.Ae / (
-                    Po * (1 + converter.design_features['dIin_max'])),
+                    Po * (1 + converter.features['dIin_max'])),
         converter.entrance_inductor.get_inductance(gap_width_bound[0])
     ]
     Li_lower_bound = (1 + shrinking_factor) * max(Li_lower_bounds)

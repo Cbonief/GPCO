@@ -1,0 +1,26 @@
+[
+    {
+        "C1": "Selecione C1",
+        "C2": "Selecione C2",
+        "C3": "Selecione C3",
+        "C4": "Selecione C4",
+        "D3": "Selecione D3",
+        "D4": "Selecione D4",
+        "S1": "Selecione S1",
+        "S2": "Selecione S2",
+        "LiCore": "Selecione o Núcleo de Li",
+        "LiCable": "Selecione o Cabo de Li",
+        "LkCore": "Selecione o Núcleo de Lk",
+        "LkCable": "Selecione o Cabo de Lk",
+        "TrPrimaryCable": "Selecione o Cabo do Primário",
+        "TrSecondaryCable": "Selecione o Cabo do Secundário",
+        "TrCore": "Selecione o Núcleo do Transformador"
+    },
+    {
+        "Capacitors": "Capacitores Selecionados",
+        "Switches": "Chaves Selecionadas",
+        "Cores": "Núcleos Selecionados",
+        "Cables": "Cabos Selecionados",
+        "Diodes": "Diodos Selecionados"
+    }
+]
