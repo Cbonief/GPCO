@@ -478,64 +478,66 @@ class Application(QMainWindow):
             self.new_file_was_created = False
 
     def run_optimizer(self):
-        a = self.circuit_features_handler.is_ready()
-        b = self.security_configuration.is_configured()
-        c = False
-        if self.optimization_mode == OptimizationMode.COMPLETE:
-            c = self.multi_component_selector.all_configured()
-        elif self.optimization_mode == OptimizationMode.CONTINUOUS_ONLY:
-            c = self.single_component_selector.all_configured() and self.inductor_creator.all_configured() and self.transformer_creator.is_configured()
-
-        if a and b and c:
-            # Is ready to start the optimization.
-            design_features = self.circuit_features_handler.get_features()
-            design_features['dIin_max'] = design_features['dIin_max'] / 100
-            design_features['dVo_max'] = design_features['dVo_max'] / 100
-            safety_parameters = self.security_configuration.get_parameters()
-            safety_parameters['Jmax'] = safety_parameters['Jmax'] * 1e4
-            print(self.security_configuration.get_parameters())
-            num_opt_config = self.optimizer_configuration.get_opt_config()
-            components_data_base = self.components.database
+        if not self.is_running_optimizer:
+            print("Started Optimizer")
+            a = self.circuit_features_handler.is_ready()
+            b = self.security_configuration.is_configured()
+            c = False
             if self.optimization_mode == OptimizationMode.COMPLETE:
-                selected_components_keys = self.multi_component_selector.get_selected_components()
-                ga_config = self.optimizer_configuration.get_ga_config()
-
-                # Pass the function to execute
-                worker = Worker(threaded_complete_optimization,
-                                selected_components_keys,
-                                components_data_base,
-                                design_features,
-                                safety_parameters,
-                                ga_config,
-                                num_opt_config
-                                )
-                worker.signals.result.connect(self.print_output)
-                worker.signals.finished.connect(self.thread_complete)
-
-                # Execute
-                self.thread_pool.start(worker)
+                c = self.multi_component_selector.all_configured()
             elif self.optimization_mode == OptimizationMode.CONTINUOUS_ONLY:
-                selected_components_keys = self.single_component_selector.get_selected_components()
-                worker = Worker(threaded_continuous_optimization,
-                                selected_components_keys,
-                                components_data_base,
-                                self.transformer_creator.transformer,
-                                self.inductor_creator.inductors['Li'],
-                                self.inductor_creator.inductors['Lk'],
-                                design_features,
-                                safety_parameters,
-                                num_opt_config
-                                )
-                worker.signals.result.connect(self.save_continuous_optimizer_result)
-                worker.signals.finished.connect(self.continuous_optimizer_finished_handler)
-                worker.signals.progress.connect(self.continuous_optimizer_progress_handler)
+                c = self.single_component_selector.all_configured() and self.inductor_creator.all_configured() and self.transformer_creator.is_configured()
 
-                # Execute
-                self.thread_pool.start(worker)
+            if a and b and c:
+                # Is ready to start the optimization.
+                design_features = self.circuit_features_handler.get_features()
+                design_features['dIin_max'] = design_features['dIin_max'] / 100
+                design_features['dVo_max'] = design_features['dVo_max'] / 100
+                safety_parameters = self.security_configuration.get_parameters()
+                safety_parameters['Jmax'] = safety_parameters['Jmax'] * 1e4
+                num_opt_config = self.optimizer_configuration.get_opt_config()
+                components_data_base = self.components.database
+                if self.optimization_mode == OptimizationMode.COMPLETE:
+                    selected_components_keys = self.multi_component_selector.get_selected_components()
+                    ga_config = self.optimizer_configuration.get_ga_config()
 
-            self.status_bar_text_edit.setText("Otimização em Progresso")
-        else:
-            warning("Conversor não configurado")
+                    # Pass the function to execute
+                    worker = Worker(threaded_complete_optimization,
+                                    selected_components_keys,
+                                    components_data_base,
+                                    design_features,
+                                    safety_parameters,
+                                    ga_config,
+                                    num_opt_config
+                                    )
+                    worker.signals.result.connect(self.print_output)
+                    worker.signals.finished.connect(self.thread_complete)
+
+                    # Execute
+                    self.thread_pool.start(worker)
+                elif self.optimization_mode == OptimizationMode.CONTINUOUS_ONLY:
+                    selected_components_keys = self.single_component_selector.get_selected_components()
+                    worker = Worker(threaded_continuous_optimization,
+                                    selected_components_keys,
+                                    components_data_base,
+                                    self.transformer_creator.transformer,
+                                    self.inductor_creator.inductors['Li'],
+                                    self.inductor_creator.inductors['Lk'],
+                                    design_features,
+                                    safety_parameters,
+                                    num_opt_config
+                                    )
+                    worker.signals.result.connect(self.save_continuous_optimizer_result)
+                    worker.signals.finished.connect(self.continuous_optimizer_finished_handler)
+                    worker.signals.progress.connect(self.continuous_optimizer_progress_handler)
+
+                    # Execute
+                    self.thread_pool.start(worker)
+
+                self.status_bar_text_edit.setText("Otimização em Progresso")
+                self.is_running_optimizer = True
+            else:
+                warning("Conversor não configurado")
 
     def save_continuous_optimizer_result(self, result):
         best_loss, success, operation_point, converter = result
@@ -554,6 +556,7 @@ class Application(QMainWindow):
         self.progress = 0
         self.optimization_progress_bar.reset()
         self.status_bar_text_edit.setText("Otimização Finalizada")
+        self.is_running_optimizer = False
 
     def stop_optimizer(self):
         self.progress += 1

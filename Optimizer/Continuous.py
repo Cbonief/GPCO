@@ -6,7 +6,6 @@ from Converter.Restrictions import *
 
 def optimize_converter(converter, subroutine_iteration=100, epochs=2, algorithm='SLSQP', bounds=None,
                        progress_function=None, arg=None):
-    print("Started Optimizer")
     if bounds is None:
         [bounds, feasible] = determine_bounds(converter)
     else:
