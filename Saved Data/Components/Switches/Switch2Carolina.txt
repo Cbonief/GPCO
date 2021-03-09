@@ -1,5 +1,0 @@
-Name: Switch1
-Ton: 3.0e-8
-Toff: 3.0e-8
-Rd: 3.0e-2
-Cds: 140e-12

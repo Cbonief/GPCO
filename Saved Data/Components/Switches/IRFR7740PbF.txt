@@ -1,0 +1,6 @@
+Name: IRFR7740PbF
+Ton: 3.0e-8
+Toff: 3.0e-8
+Rd: 3.0e-3
+Cds: 140e-12
+Vmax: 75

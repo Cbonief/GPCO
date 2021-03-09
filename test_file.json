@@ -1,0 +1,92 @@
+[
+  {
+    "Capacitors": [
+      "C1",
+      "C2",
+      "C3",
+      "C4"
+    ],
+    "Switches": [
+      "IRFR7740PbF"
+    ],
+    "Cores": [
+      "NEE_30_15",
+      "NEE_42_20"
+    ],
+    "Cables": [
+      "AWG_23"
+    ],
+    "Diodes": [
+      "HFA04SD60S"
+    ]
+  },
+  {
+    "C1": "C1",
+    "C2": "C2",
+    "C3": "C3",
+    "C4": "C4",
+    "D3": "HFA04SD60S",
+    "D4": "HFA04SD60S",
+    "S1": "IRFR7740PbF",
+    "S2": "IRFR7740PbF"
+  },
+  {
+    "Vc": 1.0,
+    "Vd": 1.0,
+    "Vs": 1.0,
+    "Id": 1.0,
+    "Ic": 1.0,
+    "Is": 1.0,
+    "ku Transformer": 0.4,
+    "ku EntranceInductor": 0.4,
+    "ku AuxiliaryInductor": 0.4,
+    "Jmax": 450.0
+  },
+  {
+    "Epochs": 100,
+    "Population Size": 10,
+    "Mutation Rate": 0.5,
+    "Rewrite Rate": 0.25,
+    "Iterations": 1000,
+    "Tries": 5,
+    "Method": "SLSQP"
+  },
+  {
+    "Vi": 17.4,
+    "Vo": 400.0,
+    "Po": 130.0,
+    "dIin_max": 20,
+    "dVo_max": 2,
+    "Bmax": {
+      "Transformer": 0.15,
+      "EntranceInductor": 0.3,
+      "AuxiliaryInductor": 0.15
+    },
+    "dVc1": 0.1,
+    "dVc2": 0.1,
+    "D_Expected": 0.4867,
+    "Ro": 160.0
+  },
+  1,
+  {
+    "Core": "NEE_42_20",
+    "Cable": "AWG_23",
+    "N": 28,
+    "Ncond": 7
+  },
+  {
+    "Core": "NEE_20",
+    "Cable": "AWG_23",
+    "N": 5,
+    "Ncond": 8
+  },
+  {
+    "Core": "NEE_30_15",
+    "Primary Cable": "AWG_23",
+    "Secondary Cable": "AWG_23",
+    "Primary N": 5,
+    "Secondary N": 59,
+    "Primary Ncond": 8,
+    "Secondary Ncond": 1
+  }
+]

@@ -12,12 +12,17 @@ def bmax_Li(obj, X):
 
 
 def AeAw_Li(obj, X):
-    res = obj.entrance_inductor.Core.AeAw - obj.calculated_values['LiIrms']*obj.entrance_inductor.Ncond*obj.entrance_inductor.Cable.S/(obj.features['Jmax'] * obj.safety_parameters['ku']['EntranceInductor'])
+    res = obj.entrance_inductor.Core.AeAw - obj.calculated_values[
+        'LiIrms'] * obj.entrance_inductor.Ncond * obj.entrance_inductor.Cable.S / (
+                      obj.safety_parameters['Jmax'] * obj.safety_parameters['ku EntranceInductor'])
     return res
 
 
 def JLi(obj, X):
-    res = obj.features['Jmax'] - obj.calculated_values['LiIrms'] / (obj.entrance_inductor.Cable.Scu * obj.entrance_inductor.Ncond)
+    res = obj.safety_parameters['Jmax'] - obj.calculated_values['LiIrms'] / (
+                obj.entrance_inductor.Cable.Scu * obj.entrance_inductor.Ncond)
+    print(obj.calculated_values['LiIrms'] / (obj.entrance_inductor.Cable.Scu * obj.entrance_inductor.Ncond),
+          obj.safety_parameters['Jmax'])
     return res
 
 
@@ -28,12 +33,15 @@ def bmax_Lk(obj, X):
 
 
 def AeAw_Lk(obj, X):
-    res = obj.auxiliary_inductor.Core.AeAw - obj.calculated_values['TransformerIrms']*obj.entrance_inductor.Ncond*obj.auxiliary_inductor.Cable.S/(obj.features['Jmax'] * obj.safety_parameters['ku']['AuxiliaryInductor'])
+    res = obj.auxiliary_inductor.Core.AeAw - obj.calculated_values[
+        'TransformerIrms'] * obj.entrance_inductor.Ncond * obj.auxiliary_inductor.Cable.S / (
+                      obj.safety_parameters['Jmax'] * obj.safety_parameters['ku AuxiliaryInductor'])
     return res
 
 
 def JLk(obj, X):
-    res = obj.features['Jmax'] - obj.calculated_values['TransformerIrms'] / (obj.auxiliary_inductor.Cable.Scu * obj.auxiliary_inductor.Ncond)
+    res = obj.safety_parameters['Jmax'] - obj.calculated_values['TransformerIrms'] / (
+                obj.auxiliary_inductor.Cable.Scu * obj.auxiliary_inductor.Ncond)
     return res
 
 

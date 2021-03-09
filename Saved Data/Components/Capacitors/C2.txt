@@ -1,4 +1,4 @@
 Name: C2
 C: 330e-6
 Rse: 30e-4
-Vmax: 80
+Vmax: 58

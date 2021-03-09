@@ -1,4 +1,4 @@
-from Optimizer.GeneticAlgorithm.CustomUtilization import optimize_components
+from Optimizer.CustomUtilization import optimize_components
 from test_components import *
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'

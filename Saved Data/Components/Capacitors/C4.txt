@@ -1,4 +1,4 @@
 Name: C4
 C: 330e-6
 Rse: 250e-3
-Vmax: 500
+Vmax: 450

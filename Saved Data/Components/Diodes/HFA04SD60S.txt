@@ -1,0 +1,4 @@
+Name: HFA04SD60S
+Vd: 1.5
+Rt: 0
+Vmax: 620
