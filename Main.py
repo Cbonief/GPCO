@@ -2,11 +2,12 @@ import datetime
 import json
 import sys
 from functools import partial
+import numpy as np
 
 from PyQt5.QtCore import QSize, Qt, QCoreApplication, QThreadPool
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import *
-from pyqtgraph import PlotWidget
+from pyqtgraph import PlotWidget, mkPen
 
 from GUI.Custom.ComponentSelector import SingleComponentSelector, MultiComponentSelector
 from GUI.Custom.FeatureExtractor import FeatureExtractor, LabeledInput
@@ -18,12 +19,10 @@ from GUI.Custom.SecurityConfigurationWindow import SecurityConfigurationWindow
 from GUI.Custom.ThreadsHandler import Worker
 from GUI.Custom.TransformerCreator import TransformerCreationHandler
 from GUI.Custom.Widgets import CenteredWidget, SpacedWidget
-from Optimizer.CustomUtilization import threaded_complete_optimization, \
-    threaded_continuous_optimization
+from Optimizer.CustomUtilization import threaded_continuous_optimization, threaded_complete_optimization
 
 CONTINUOUS = ['C1', 'C2', 'C3', 'C4', 'D3', 'D4', 'S1', 'S2', 'Li', 'Lk', 'Tr']
 COMPLETE = ['Capacitors', 'Switches', 'Diodes', 'Cores', 'Cables']
-CONVERTER_PARAMS = ['']
 
 
 class OptimizationMode:
@@ -66,11 +65,12 @@ class Application(QMainWindow):
         print("Oi")
         top_right_layout = QHBoxLayout()
         self.converter_result_edit = QTextBrowser()
+        self.optimizer_graph = PlotWidget()
+        self.optimizer_graph.setBackground('w')
         aux_frame = QFrame()
         aux_frame.setMaximumWidth(450)
         aux_layout = QHBoxLayout()
-        optimizer_graph = PlotWidget()
-        aux_layout.addWidget(optimizer_graph)
+        aux_layout.addWidget(self.optimizer_graph)
         aux_frame.setLayout(aux_layout)
         top_right_layout.addWidget(self.converter_result_edit)
         top_right_layout.addWidget(aux_frame)
@@ -78,6 +78,7 @@ class Application(QMainWindow):
         bottom_right_layout = QHBoxLayout()
         analysis_graph_1 = QTextBrowser()
         analysis_graph_2 = PlotWidget()
+        analysis_graph_2.setBackground('w')
         aux_frame2 = QFrame()
         aux_frame2.setMaximumWidth(450)
         aux_layout2 = QHBoxLayout()
@@ -215,7 +216,7 @@ class Application(QMainWindow):
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
         self.optimization_progress_bar = QProgressBar(self)
-        self.optimization_progress_bar.setMaximumWidth(180)
+        self.optimization_progress_bar.setMaximumWidth(250)
         self.status_bar_text_edit = QLabel("")
         self.status_bar.addPermanentWidget(self.optimization_progress_bar, 1)
         self.status_bar.addPermanentWidget(self.status_bar_text_edit, 1)
@@ -285,8 +286,8 @@ class Application(QMainWindow):
         self.actionSave.setShortcut(_translate("MainWindow", "Ctrl+S"))
         self.actionSaveAs.setText(_translate("MainWindow", "Salvar Como"))
         self.actionSaveAs.setShortcut(_translate("MainWindow", "Ctrl+Shift+S"))
-        self.actionSwitch.setText(_translate("MainWindow", "Switch"))
-        self.actionDiode.setText(_translate("MainWindow", "Diode"))
+        self.actionSwitch.setText(_translate("MainWindow", "Chave"))
+        self.actionDiode.setText(_translate("MainWindow", "Diodo"))
         self.actionCapacitor.setText(_translate("MainWindow", "Capacitor"))
         self.actionCable.setText(_translate("MainWindow", "Fio"))
         self.actionCore.setText(_translate("MainWindow", "Núcleo Magnético"))
@@ -467,6 +468,7 @@ class Application(QMainWindow):
                 self.optimizer_configuration.set_features(data[3])
                 self.circuit_features_handler.set_features(data[4])
                 self.optimization_mode = data[5]
+                self.select_components_tab.setCurrentIndex(self.optimization_mode)
                 Li_dictionary = data[6]
                 Lk_dictionary = data[7]
                 Transfromer_dictionary = data[8]
@@ -501,38 +503,48 @@ class Application(QMainWindow):
                     selected_components_keys = self.multi_component_selector.get_selected_components()
                     ga_config = self.optimizer_configuration.get_ga_config()
 
-                    # Pass the function to execute
-                    worker = Worker(threaded_complete_optimization,
-                                    selected_components_keys,
-                                    components_data_base,
-                                    design_features,
-                                    safety_parameters,
-                                    ga_config,
-                                    num_opt_config
-                                    )
-                    worker.signals.result.connect(self.print_output)
-                    worker.signals.finished.connect(self.thread_complete)
+                    # Creates the worker thread for the Complete Optimizer.
+                    worker = Worker(
+                        threaded_complete_optimization,
+                        selected_components_keys,
+                        components_data_base,
+                        design_features,
+                        safety_parameters,
+                        ga_config,
+                        num_opt_config
+                    )
+                    worker.signals.result.connect(self.save_genetic_optimizer_result)
+                    worker.signals.finished.connect(self.genetic_optimizer_finished_handler)
+                    worker.signals.progress.connect(self.genetic_optimizer_progress_handler)
 
                     # Execute
                     self.thread_pool.start(worker)
+
+                    self.data_part = 0
+                    self.last_data = None
+
                 elif self.optimization_mode == OptimizationMode.CONTINUOUS_ONLY:
                     selected_components_keys = self.single_component_selector.get_selected_components()
-                    worker = Worker(threaded_continuous_optimization,
-                                    selected_components_keys,
-                                    components_data_base,
-                                    self.transformer_creator.transformer,
-                                    self.inductor_creator.inductors['Li'],
-                                    self.inductor_creator.inductors['Lk'],
-                                    design_features,
-                                    safety_parameters,
-                                    num_opt_config
-                                    )
+
+                    # Creates the worker thread for the Continuous Optimizer.
+                    worker = Worker(
+                        threaded_continuous_optimization,
+                        selected_components_keys,
+                        components_data_base,
+                        self.transformer_creator.transformer,
+                        self.inductor_creator.inductors['Li'],
+                        self.inductor_creator.inductors['Lk'],
+                        design_features,
+                        safety_parameters,
+                        num_opt_config
+                    )
                     worker.signals.result.connect(self.save_continuous_optimizer_result)
                     worker.signals.finished.connect(self.continuous_optimizer_finished_handler)
                     worker.signals.progress.connect(self.continuous_optimizer_progress_handler)
 
                     # Execute
                     self.thread_pool.start(worker)
+
 
                 self.status_bar_text_edit.setText("Otimização em Progresso")
                 self.is_running_optimizer = True
@@ -543,11 +555,26 @@ class Application(QMainWindow):
         best_loss, success, operation_point, converter = result
         self.converter_result_edit.setText(
             "Optimização Completa"
+            "\nMelhores Perdas = {:.3e} W"
             "\nFrequência = {:.3e} Hz"
             "\nIndutância de Entrada = {:.3e} H"
             "\nIndutância Auxiliar = {:.3e} H"
-            "\nConversor \n {}".format(operation_point[0], operation_point[1], operation_point[2], converter)
+            "\nConversor \n {}".format(best_loss, operation_point[0], operation_point[1], operation_point[2], converter)
         )
+        frequency = np.logspace(3, 5, 100)
+        Li = operation_point[1]
+        Lk = operation_point[2]
+        loss_vec = np.zeros(100)
+        for i in range(0, 100):
+            loss_vec[i] = converter.compensated_total_loss([frequency[i], Li, Lk])
+            print(loss_vec[i], [frequency[i], Li, Lk])
+        pen = mkPen(color=(255, 0, 0))
+        self.optimizer_graph.plot(frequency, loss_vec, pen=pen)
+        self.optimizer_graph.setTitle("Perdas x Frequência", color=(0, 0, 0), size='12pt')
+        self.optimizer_graph.setLabel('left', 'Perdas (W)', **{'color':'#000'})
+        self.optimizer_graph.setLabel('bottom', 'Frequência (Hz)', **{'color':'#000'})
+        self.optimizer_graph.showGrid(x=True, y=True)
+        self.optimizer_graph.setLogMode(x=True, y=False)
 
     def continuous_optimizer_progress_handler(self, percentage):
         self.optimization_progress_bar.setValue(percentage)
@@ -561,6 +588,32 @@ class Application(QMainWindow):
     def stop_optimizer(self):
         self.progress += 1
         self.optimization_progress_bar.setValue(self.progress)
+
+    #def genetic_optimizer_progress_handler(self, data):
+
+    def save_genetic_optimizer_result(self, result):
+        print(result)
+
+    def get_data_from_string(self, data):
+        aux = str(data)
+        result = int(aux[2:7])/(10**(int(aux[1])))
+        return result
+
+    def genetic_optimizer_progress_handler(self, data):
+        aux_string = str(data)
+        data_case = int(aux_string[0])
+        data_value = self.get_data_from_string(aux_string)
+        print("Got {}th data = {}".format(data_case, self.get_data_from_string(aux_string)))
+        if data_case == 3:
+            self.optimization_progress_bar.setValue(int(data_value))
+
+        #self.optimization_progress_bar.setValue(data)
+
+    def genetic_optimizer_finished_handler(self):
+        print("AE CARAI")
+
+
+
 
 
 if __name__ == "__main__":

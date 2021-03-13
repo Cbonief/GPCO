@@ -12,7 +12,7 @@ def optimize_converter(converter, subroutine_iteration=100, epochs=2, algorithm=
         feasible = True
 
     if feasible:
-        best = 1000
+        best = np.inf
         optimization_result = None
         iteration = 0
         while iteration < epochs:
@@ -31,15 +31,18 @@ def optimize_converter(converter, subroutine_iteration=100, epochs=2, algorithm=
                         best = solution.fun
                         optimization_result = solution
                 except ValueError:
+                    print("Found Exception")
                     iteration -= 1
                 finally:
                     iteration += 1
+            else:
+                iteration += 1
             if progress_function is not None:
                 if arg is not None:
                     progress_function(arg, round(100 * (iteration + 1) / epochs))
                 else:
-                    progress_function(round(100 * (iteration + 1) / epochs))
-        if optimization_result:
+                    progress_function([iteration, epochs])
+        if optimization_result is not None:
             return [best, optimization_result.success, optimization_result.x]
         else:
             return [2 * converter.features['Po'], False, []]
@@ -69,9 +72,6 @@ def find_feasible_point(converter, bounds=None, return_bounds=False, maxiter=50)
             )
             found_point = False
             if sol.success:
-                # print("Finished minimizing the violation")
-                # print("Verifying Constraints")
-                # print(sol)
                 found_point = True
             if found_point:
                 feasible_point = np.array(sol.x)

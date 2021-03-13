@@ -30,7 +30,6 @@ class BoostHalfBridgeInverter:
 
         self.features['D_Expected'] = 1 - (self.features['Vi'] * transformer.Ratio / self.features['Vo'])
         self.features['Ro'] = self.features['Vo'] ** 2 / self.features['Po']
-        print(self.features)
 
         self.loss_functions = Losses.loss_function_map
         self.loss_functions_activation_map = {
@@ -64,6 +63,7 @@ class BoostHalfBridgeInverter:
     # Compensates for the fact that some losses depend of the input current.
     def compensated_total_loss(self, X, activation_table=True, override=False):
         if np.prod(X == self.last_calculated_operating_point, dtype=bool) and not override:
+            #print("{}, {}".format(X, self.last_calculated_operating_point))
             return self.last_calculated_loss
         else:
             try:

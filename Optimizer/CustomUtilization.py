@@ -3,7 +3,21 @@ from Converter.Components import *
 from Optimizer.Continuous import determine_bounds, optimize_converter
 from Optimizer.GeneticAlgorithm import GeneticAlgorithm
 from Optimizer.Genome import Genome
+import math
 
+def truncate(number, decimals=0):
+    """
+    Returns a value truncated to a specific number of decimal places.
+    """
+    if not isinstance(decimals, int):
+        raise TypeError("decimal places must be an integer.")
+    elif decimals < 0:
+        raise ValueError("decimal places has to be 0 or more.")
+    elif decimals == 0:
+        return math.trunc(number)
+
+    factor = 10.0 ** decimals
+    return math.trunc(number * factor) / factor
 
 # Removes elements from the list that will not under any circumstances, be feasible for the given design features.
 def preselection(selected_components, design_features, safety_parameters):
@@ -144,7 +158,6 @@ def generate_genome(available_genes, args):
     new_genome.set_genes(genes)
     return new_genome
 
-
 def evaluate_genome(genome, epoch, features):
     available_genes = features[0]
     design_features = features[1]
@@ -207,11 +220,14 @@ def evaluate_genome(genome, epoch, features):
     if not feasible:
         return 0
     else:
-        iterations = np.ceil(epoch / 20)
+        try:
+            iterations = num_opt_config['Tries']
+        except KeyError:
+            iterations = np.ceil(epoch / 20)
         if iterations <= 2:
             iterations = 2
-        loss, feasible, x = optimize_converter(converter, bounds=bounds, epochs=iterations)
-        genome.set_custom_data(x)
+        loss, feasible, operating_point = optimize_converter(converter, bounds=bounds, epochs=iterations)
+        genome.set_custom_data(operating_point)
         return design_features['Po'] / loss
 
 
@@ -224,7 +240,7 @@ GA_DEFAULT_CONFIG = {
 
 
 def optimize_components(selected_components_keys, components_data_base, design_features, safety_parameters,
-                        ga_config=None, num_opt_config=None):
+                        ga_config=None, num_opt_config=None, progress_function=None, arg=None):
     if ga_config is None:
         ga_config = GA_DEFAULT_CONFIG
     selected_components = {}
@@ -271,29 +287,43 @@ def optimize_components(selected_components_keys, components_data_base, design_f
         'Auxiliary Inductor Ncond': 5
     }
 
-    genetic_algorithm = GeneticAlgorithm(ga_config['Population Size'], available_genes)
-    print("Created GA")
-    print("Building Initial Population")
+    genetic_algorithm = GeneticAlgorithm(available_genes, ga_config['Population Size'])
     genetic_algorithm.create_population(generate_genome, [design_features, safety_parameters])
     print("Built Initial Population")
     fittest_genome = genetic_algorithm.optimize(
         evaluate_genome,
-        [available_genes, design_features, safety_parameters, num_opt_config],
-        ga_config['Epochs'],
-        ga_config['Mutation Rate'],
-        0.2,
-        # ga_config['Rewrite Rate'],
-        numeric_genes_mutation_size,
+        args=[available_genes, design_features, safety_parameters, num_opt_config],
+        config=ga_config,
+        numeric_genes_mutation_size=numeric_genes_mutation_size,
+        progress_function=progress_function
     )
-
     return converter_from_genome(fittest_genome, design_features, safety_parameters, fittest_genome.custom_data)
 
+def get_number_of_decimals(data):
+    return len(str(int(100*truncate(data, 2)))) - int(np.ceil(np.log10(data)))
+
+def emit_complete_optimizer_progress(progress_callback, data):
+    best, avg, percentage = data
+    output = 100*truncate(best, 2)+(10**5)*get_number_of_decimals(best)+(10**6)*1
+    progress_callback.emit(output)
+    output = 100*truncate(avg, 2)+(10**5)*get_number_of_decimals(avg)+(10**6)*2
+    progress_callback.emit(output)
+    output = 100*truncate(percentage, 2)+(10**5)*get_number_of_decimals(avg)+(10**6)*3
+    progress_callback.emit(output)
 
 def threaded_complete_optimization(selected_components_keys, components_data_base, design_features, safety_parameters,
                                    ga_config, num_opt_config, progress_callback):
     print("Thread Started")
-    return optimize_components(selected_components_keys, components_data_base, design_features, safety_parameters,
-                               ga_config, num_opt_config)
+    result = optimize_components(
+        selected_components_keys,
+        components_data_base,
+        design_features,
+        safety_parameters,
+        ga_config,
+        num_opt_config,
+        (emit_complete_optimizer_progress, progress_callback)
+    )
+    return result
 
 
 def emit_continuous_optimizer_progress(progress_callback, data):
@@ -313,8 +343,10 @@ def threaded_continuous_optimization(selected_components_keys, components_data_b
         diodes.append(components_data_base['Diodes'][selected_components_keys['D' + str(i)]])
     converter = BoostHalfBridgeInverter(design_features, safety_parameters, Transformer, Li, Lk, switches, diodes,
                                         capacitors)
-    [result, success, output] = optimize_converter(converter, epochs=num_opt_config['Tries'],
-                                                   subroutine_iteration=num_opt_config['Iterations'],
-                                                   progress_function=emit_continuous_optimizer_progress,
-                                                   arg=progress_callback)
+    [result, success, output] = optimize_converter(
+        converter, epochs=num_opt_config['Tries'],
+        subroutine_iteration=num_opt_config['Iterations'],
+        progress_function=emit_continuous_optimizer_progress,
+        arg=progress_callback
+    )
     return [result, success, output, converter]
