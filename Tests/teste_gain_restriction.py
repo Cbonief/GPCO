@@ -2,7 +2,7 @@
 
 from Converter.BoostHalfBridge import *
 from Converter.Restrictions import *
-from Converter.auxiliary_functions import vc3_vc4_d
+from Converter.auxiliary_functions import vc3_vc4_d_simplified
 from test_components import *
 
 'Desenvolvido por Carlos Bonifácio Eberhardt Franco'

@@ -1,13 +1,7 @@
-import math
-
-import numpy as np
-
 import Converter.Losses as Losses
-import Converter.Restrictions as Restrictions
 from Converter.Components import Transformer
-from Converter.auxiliary_functions import TransformerCurrentHarmonics, D3Iavg, s2_irms, InputCurrentHarmonics, \
-    AuxiliaryInductorVrms, D3Irms, s1_irms, TransformerIRms, D4Iavg, c1_irms, C4Irms, vc3_vc4_d, D4Irms, LiIrms, \
-    c2_irms, C3Irms
+from Converter.Restrictions import Restrictions
+from Converter.auxiliary_functions import *
 
 
 class BoostHalfBridgeInverter:
@@ -42,7 +36,7 @@ class BoostHalfBridgeInverter:
         }
 
         self.restriction_functions = []
-        for restriction in Restrictions.Restrictions:
+        for restriction in Restrictions:
             self.restriction_functions.append({'active': True, 'function': restriction})
         
         # Componentes
@@ -97,14 +91,19 @@ class BoostHalfBridgeInverter:
             raise ValueError
         efficiency = 0.8
         total_loss = self.features['Po'] * (1 - efficiency) / efficiency
+        losses = {}
         error = 2
-        losses = None
         while error > 0.1:
             loss_last = total_loss
             losses, total_loss = self.total_loss_separate(X, efficiency)
             efficiency = self.features['Po'] / (self.features['Po'] + total_loss)
+            if efficiency <= 0.5:
+                efficiency = 0.5
             error = abs(loss_last - total_loss)
-        return losses, total_loss
+        if math.isnan(total_loss) or math.isinf(total_loss):
+            raise ValueError
+        else:
+            return losses, total_loss
 
     # Calculates the total loss of the converter, for a given estimated efficiency.
     def total_loss(self, X, efficiency):
@@ -174,7 +173,7 @@ class BoostHalfBridgeInverter:
         Ts = 1 / fs
         # print('fs = {}, Li = {}, Lk = {}'.format(fs,Li,Lk))
         try:
-            [Vc3, Vc4, D] = vc3_vc4_d(self, fs, Lk)
+            [Vc3, Vc4, D] = vc3_vc4_d_simplified(self, fs, Lk)
         except ValueError:
             raise ValueError
 

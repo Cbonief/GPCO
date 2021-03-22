@@ -1,20 +1,21 @@
 import datetime
 
+from scipy.optimize import fsolve
+
 from Converter.Restrictions import *
 from Converter.fqs import *
 
 
 # Calcula Vc3, Vc4 e a razão cíclica necessária para obter o valor de Vo desejado.
-def vc3_vc4_d(obj, fs, Lk):
-    start = datetime.datetime.now()
+def vc3_vc4_d_simplified(obj, fs, Lk):
     Vi = obj.features['Vi']
     n = obj.transformer.Ratio
     Ro = obj.features['Ro']
     Vo = obj.features['Vo']
-    k = 2*fs*Lk*n**2/Ro
+    k = 2 * fs * Lk * n ** 2 / Ro
     b = -obj.features['D_Expected'] - 1
-    c = 2*k + obj.features['D_Expected']
-    d = -2*k
+    c = 2 * k + obj.features['D_Expected']
+    d = -2 * k
     e = k
 
     D = -1
@@ -26,22 +27,66 @@ def vc3_vc4_d(obj, fs, Lk):
                 D = dVal.real
                 found = True
     if not found:
-        print("Gain Error at [{},{}]; [{},{}]".format(fs, Lk, gain_restriction(obj, [fs, 0, Lk]), gain_restriction_2(obj, [fs, 0, Lk])))
+        print("Gain Error at [{},{}]; [{},{}]".format(fs, Lk, gain_restriction(obj, [fs, 0, Lk]),
+                                                      gain_restriction_2(obj, [fs, 0, Lk])))
         raise ValueError
     else:
-        vc3 = n*(D*Vi/(1-D) - 2*n*Lk*fs*Vo/(Ro*D**2))
-        vc4 = n*(Vi - 2*n*Lk*fs*Vo/(Ro*(1-D)**2))
+        vc3 = n * (D * Vi / (1 - D) - 2 * n * Lk * fs * Vo / (Ro * D ** 2))
+        vc4 = n * (Vi - 2 * n * Lk * fs * Vo / (Ro * (1 - D) ** 2))
         solution = [vc3, vc4, D]
     return solution
 
-# Sistema de equações para obter Vc3, Vc4 e D.
+
+def Vo_ideal(obj, D):
+    Vi = obj.features['Vi']
+    n = obj.transformer.Ratio
+    Ro = obj.features['Ro']
+
+    return n * Vi / (1 - D)
+
+
+def Vo_simplified(obj, D, fs, Lk):
+    Vi = obj.features['Vi']
+    n = obj.transformer.Ratio
+    Ro = obj.features['Ro']
+
+    return n * Vi * (D ** 2) * (1 - D) / (((2 * D - 1) ** 2 + 1) * (Lk * fs * n ** 2 / Ro) + (D * (1 - D)) ** 2)
+
+
+def Vo(obj, D, fs, Lk):
+    Vi = obj.features['Vi']
+    n = obj.transformer.Ratio
+    Ro = obj.features['Ro']
+    k1 = 2 * Lk * fs * Vi * n ** 3 / Ro
+    k2 = n * Vi
+
+    VoIdeal = Vo_ideal(obj, D) / 2
+    x0 = [VoIdeal, VoIdeal]
+
+    solution = fsolve(fvc3vc4, x0, args=(k1, k2, D))
+    return sum(solution)
+
+
+# System of equations to solve for Vc3, Vc4 and D, in terms of Vo.
 def fvo(X, k1, k2, Vo):
     Vc3 = X[0]
     Vc4 = X[1]
     D = X[2]
-    return np.array([Vo + k1 * (Vc3 ** 2) * (Vc4 - k2) * (Vc4 * (1 - D) + D * k2)/(Vo**2), Vo + k1 * (Vc4 ** 2) * (Vc3 + k2) * (Vc3 * (1 - D) - D * k2)/(Vo**2), Vc3 + Vc4 - Vo])
+    return np.array([Vo + k1 * (Vc3 ** 2) * (Vc4 - k2) * (Vc4 * (1 - D) + D * k2) / (Vo ** 2),
+                     Vo + k1 * (Vc4 ** 2) * (Vc3 + k2) * (Vc3 * (1 - D) - D * k2) / (Vo ** 2), Vc3 + Vc4 - Vo])
+
+
+# System of equations to solve for Vc3, and Vc4, given D.
+def fvc3vc4(X, k1, k2, D):
+    Vc3 = X[0]
+    Vc4 = X[1]
+    return np.array([k1 * (Vc3 + Vc4) ** 3 + k1 * (Vc3 ** 2) * (Vc4 - k2) * (Vc4 * (1 - D) + D * k2),
+                     k1 * (Vc3 + Vc4) ** 3 + (Vc4 ** 2) * (Vc3 + k2) * (Vc3 * (1 - D) - D * k2)])
+
 
 'EQUAÇÕES DE TENSÃO E CORRENTE DOS COMPONENTES'
+
+
 def TransformerIRms(obj, values):
     Ts = values['Ts']
     Vc3 = values['Vc3']

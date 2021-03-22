@@ -1,0 +1,28 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import Tests.test_components
+from Converter.auxiliary_functions import Vo_simplied, Vo, Vo_ideal
+
+'''
+This test file, compares the ideal gain, the real simplified gain and 
+the real gain of the Boost Half Bridge Converter.
+'''
+
+
+duty_cycle = np.linspace(0.3, 0.7, 100)
+fs = 50e3
+Vo_ideal = [Vo_ideal(carolina_converter, D) for D in duty_cycle]
+Vo_simplied05 = [Vo_simplied(carolina_converter, D, fs, 0.5e-6) for D in duty_cycle]
+Vo_simplied10 = [Vo_simplied(carolina_converter, D, fs, 1e-6) for D in duty_cycle]
+Vo_simplied15 = [Vo_simplied(carolina_converter, D, fs, 1.5e-6) for D in duty_cycle]
+Vo05 = [Vo(carolina_converter, D, fs, 0.5e-6) for D in duty_cycle]
+Vo10 = [Vo(carolina_converter, D, fs, 1e-6) for D in duty_cycle]
+Vo15 = [Vo(carolina_converter, D, fs, 1.5e-6) for D in duty_cycle]
+
+plt.figure()
+plt.axes()
+plt.plot(duty_cycle, Vo)
+plt.plot(duty_cycle, Vo_simplied05)
+plt.plot(duty_cycle, Vo05)
+
+plt.show()
