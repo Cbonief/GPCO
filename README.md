@@ -10,7 +10,7 @@ The superficial layer uses a genetic algorithm to handle the discrete variables,
 
 *Figure 1 - Boost Half Bridge DC-DC Converter*
 
-![Hello](https://i.imgur.com/MKGG5rW.png)
+![Hello](https://github.com/Cbonief/GPCO/blob/master/Imgs/BoostHalfBridgeConverter.png)
 
 ## Table of Contents
   - [1. Description of the Problem](#1-description-of-the-problem)
