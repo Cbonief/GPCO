@@ -83,55 +83,73 @@ This goes hand in hand with the previous item.
 
 ## REFERENCES
 
-BALACHANDRAN, Swaminathan; LEE, Fred C.Y. **Algorithms for Power Converter Design Optimization**. **IEEE Transactions on Aerospace and Electronic Systems**. v. 17, n. 3. 1981.
+AUDE. H. T. R; Notes on Quartic Curves. The American Mathematical Monthly. v. 56, n. 3, p. 165-170. 1949.
 
-BARBI, Ivo; MARTINS, Denizar Cruz. **Introdução ao Estudos de Conversores c.c.-c.a.**. 1°Ed. Florianópolis: Edição do Autor, 2005. v. 500. 489p.
+BALACHANDRAN, Swaminathan; LEE, Fred C.Y. Algorithms for Power Converter Design Optimization. IEEE Transactions on Aerospace and Electronic Systems. v. 17, n. 3. 1981.
 
-BARBI, Ivo. **Projeto de Fontes Chaveadas**. 3ªEd. Florianópolis: Edição do Autor, 2014.
+BARBI, Ivo; MARTINS, Denizar Cruz. Introdução ao Estudos de Conversores c.c.-c.a.. 1°Ed. Florianópolis: Edição do Autor, 2005. v. 500. 489p.
 
-CARDOSO, Nilton Pedro. **Inversor Monofásico com Estágio c.c.-c.c. Boost Half Bridge Alimentado a partir de Bateria Veicular**. Trabalho de Conclusão de Curso, UDESC. Joinville, SC; 2017.
+BARBI, Ivo. Projeto de Fontes Chaveadas. 3ªEd. Florianópolis: Edição do Autor, 2014.
 
-CHINNECK, John W. **Practical Optimization: A Gentle Introduction**. Ottawa, Canada. Edição do Autor. Última edição em 2018.
+CARVALHO, Leticia Pivetta. Sistema de Projetos Otimizados de Conversores Estáticos (Poce) Usando Algoritmos Genéticos. Tese de Doutorado, UFSM. Santa Maria, RS; 2017.
 
-DEMONTI, R; MARTINS, D. C.. Photovoltaic Energy Processing for Utility Connected System. **Anais do VI Congresso Brasileiro de Eletrônica de Potência (COBEP 2001)**. Florianópolis, Brasil, pp. 735-739. 2001.
+CARDOSO, Nilton Pedro. Inversor Monofásico com Estágio c.c.-c.c. Boost Half Bridge Alimentado a partir de Bateria Veicular. Trabalho de Conclusão de Curso, UDESC. Joinville, SC; 2017.
 
-DURO, B; RAMDSEN, V. S; MUTTIK P. Minimization of active filter rat-ing in high power hybrid filter systems. **Anais da IEEE International Conference on Power Electronics Drive Systems**. Hong Kong, Hong Kong, pp. 1043–1048. 1999.
+CHINNECK, John W. Practical Optimization: A Gentle Introduction. Ottawa, Canada. Edição do Autor. Última edição em 2018.
 
-FIACCO, A.V; MCCORMICK, G.P. **Nonlinear Programming: Sequential Unconstrained Minimization Techniques**. New York. Editora Wiley, 1968.
+DEMONTI, R; MARTINS, D. C.. Photovoltaic Energy Processing for Utility Connected System. Anais do VI Congresso Brasileiro de Eletrônica de Potência (COBEP 2001). Florianópolis, Brasil, pp. 735-739. 2001.
 
-HAUPT, R. L.; HAUPT, S. E. **Practical Genetic Algorithms**. Edição: 2nd. Hoboken, N.J: Wiley-Blackwell, 2004. ISBN 978-0-471-45565-3.
+DURO, B; RAMDSEN, V. S; MUTTIK P. Minimization of active filter rating in high power hybrid filter systems. Anais da IEEE International Conference on Power Electronics Drive Systems. Hong Kong, Hong Kong, pp. 1043–1048. 1999.
 
-HESTENES, Magnus R.. Survey Paper: Multiplier and Gradient Methods. **Journal of Optimization Theory and Applications**. v. 4. n. 5. 1969.
+ELWAKEIL, Ossama A.; ARORA, Jasbir S.;. Methods for Finding Feasbile Points in Constrained Optimization. AIAA Journal. v. 33 n. 9. 1995.
 
-JEENA, John. Implementation of a Novel Transformerless Inverter Topology for PV Application. **International Journal of Latest Trends in Engineering and Technology**. v. 8, n. 2, p. 301-306.
+FIACCO, A.V; MCCORMICK, G.P. Nonlinear Programming: Sequential Unconstrained Minimization Techniques. New York. Editora Wiley, 1968.
 
-JIANG, Shuai; CAO, Dong; et. al. Grid-Connected Boost-Half-Bridge Photovoltaic Micro Inverter System Using Repetitive Current Control and Maximum Power Point Tracking. [**Twenty-Seventh Annual IEEE Applied Power Electronics Conference and Exposition (APEC)**](https://ieeexplore.ieee.org/xpl/conhome/6158725/proceeding). 2012.
+FREUND, Robert. M. Penalty and Barrier Methods for Constrained Optimization. Massachusetts Institute of Technology. Edição do Autor, 2004.
 
-KNAESEL, Carolina. **Conversão c.c.-c.c. Isolado de Alto Ganho para Integração em Módulos Fotovoltaicos**. Dissertação de Mestrado, UDESC. Joinville, SC; 2018.
+HAUPT, R. L.; HAUPT, S. E. Practical Genetic Algorithms. Edição: 2nd. Hoboken, N.J: Wiley-Blackwell, 2004. ISBN 978-0-471-45565-3.
 
-MEJBRI, Hanen; AMMOUS, Kaiçar; et al. Bi-objective sizing optimization of power converter using genetic algorithms: Application to photovoltaic systems. **COMPEL - The international journal for computation and mathematics in electrical and electronic engineering**. v. 33, n. 1/2. 2014.
+HESTENES, Magnus R.. Survey Paper: Multiplier and Gradient Methods. Journal of Optimization Theory and Applications. v. 4. n. 5. 1969.
 
-MONGE, Sergio B; et. al. Power Converter Design Optimization: a GA-based design approach to optimization of power electronics. **IEEE Industry Applications Magazine**. 2004.
+JEENA, John. Implementation of a Novel Transformerless Inverter Topology for PV Application. International Journal of Latest Trends in Engineering and Technology. v. 8, n. 2, p. 301-306.
 
-MOTA, Paulo Vitor de Sousa. **Desenvolvimento de um Inversor para Aplicações Fotovoltaicas com MPPT Integrado**. Tese de Mestrado, Universidade do Minho. Braga; 2013.
+JIANG, Shuai; CAO, Dong; et. al. Grid-Connected Boost-Half-Bridge Photovoltaic Micro Inverter System Using Repetitive Current Control and Maximum Power Point Tracking. Twenty-Seventh Annual IEEE Applied Power Electronics Conference and Exposition (APEC). 2012.
 
-OLIVEIRA, Sérgio Vidal Garcia de. **Otimização de Projeto de Fontes de Alimentação para Centrais de Telecomunicações**. Dissertação de Mestrado, UFSC. Florianópolis, SC; 2001
+KNAESEL, Carolina. Conversão c.c.-c.c. Isolado de Alto Ganho para Integração em Módulos Fotovoltaicos. Dissertação de Mestrado, UDESC. Joinville, SC; 2018.
 
-RARDIN, Ronald. L. **Optimization in Operations Research**. 1ª Edição. Prentice Hall; New Jersey. 1998.
+MEJBRI, Hanen; AMMOUS, Kaiçar; et al. Bi-objective sizing optimization of power converter using genetic algorithms: Application to photovoltaic systems. COMPEL - The international journal for computation and mathematics in electrical and electronic engineering. v. 33, n. 1/2. 2014.
 
-RIDLEY, Raymond. B; ZHOU, Chen; LEE, Fred. C. Application of Nonlinear Design Optimization Tool for Power Converter Components. **IEEE Transactions on Power Electronics**. v. 5, n. 1. 1990
+MONGE, Sergio B; et. al. Power Converter Design Optimization: a GA-based design approach to optimization of power electronics. IEEE Industry Applications Magazine. 2004.
 
-RAHMAN, S; LEE, Fred. C. Nonlinear Program Based Optimization of Boost and Buck-Boost Converter Designs. [**32nd International Spring Seminar on Electronics Technology**](https://ieeexplore.ieee.org/xpl/conhome/5175247/proceeding). v. 32, n. 3, p. 257-281.
+MOTA, Paulo Vitor de Sousa. Desenvolvimento de um Inversor para Aplicações Fotovoltaicas com MPPT Integrado. Tese de Mestrado, Universidade do Minho. Braga; 2013.
 
-TEIXEIRA, Estêvão Coelho; BRAGA, Henrique Antônio Carvalho; et. al. **Uma visão topológica sobre sistemas fotovoltaicos monofásicos conectados à rede de energia elétrica**. Juiz de Fora. 2003
+PyQt – Python binding for Trolltech’s Qt applications Framework. Disponível em: <https://riverbankcomputing.com/pyqt/index.php>
 
-TIGGEMANN, Henrique. **Análise e desenvolvimento de um inversor monofásico de baixa potência aplicado a sistemas de transporte**. Trabalho de Conclusão de Curso, UNIVANTES. Lajeado, RS; 2008.
+POWELL, Michael James David. Direct Search Algorithms for Optimizations Calculations. Universidade de Cambridge, Departamento de Matemática Aplicada e Física Teórica. Cambridge; 1998.
 
-XUE, Yaosuo; CHANG, Liuchen; KÆR, Søren Bækhøj; et al. Topologies of Single-Phase Inverters for SmallDistributed Power Generators: An Overview. **IEEE Transactions on Power Electronics**. v. 19, n. 5. 2004.
+POWELL, Michael James David. A view of algorithms for Optimization without derivatives. Universidade de Cambridge, Departamento de Matemática Aplicada e Física Teórica. Cambridge; 2007.
 
-YORK, Ben; YU, Wensong; et al. An Integrated Boost Resonant Converter for Photovoltaic Applications. **IEEE Transactions on Power Electronics**. v. 32, n. 3. 2013.
+OLIVEIRA, Sérgio Vidal Garcia de. Otimização de Projeto de Fontes de Alimentação para Centrais de Telecomunicações. Dissertação de Mestrado, UFSC. Florianópolis, SC; 2001
 
-YU, Yuan; LEE, Fred C.Y; TRINER, James E. Power Converter Design Optimization. **IEEE Transactions on Aerospace and Electronic Systems**. v. 15, n. 3. 1979.
+RARDIN, Ronald. L. Optimization in Operations Research. 1ª Edição. Prentice Hall; New Jersey. 1998.
 
-ZHANG, J; et. al. Decoupled optimization technique for design of switching regulators using genetic algorithms. **Anais da IEEE International Conference Circuits and Systems**. Geneva, Switzerland, v. 3. pp. 495–498. 2000.
+RIDLEY, Raymond. B; ZHOU, Chen; LEE, Fred. C. Application of Nonlinear Design Optimization Tool for Power Converter Components. IEEE Transactions on Power Electronics. v. 5, n. 1. 1990
 
+RAHMAN, S; LEE, Fred. C. Nonlinear Program Based Optimization of Boost and Buck-Boost Converter Designs. 32nd International Spring Seminar on Electronics Technology. v. 32, n. 3, p. 257-281.
+
+TEIXEIRA, Estêvão Coelho; BRAGA, Henrique Antônio Carvalho; et. al. Uma visão topológica sobre sistemas fotovoltaicos monofásicos conectados à rede de energia elétrica. Juiz de Fora. 2003
+
+TIGGEMANN, Henrique. Análise e desenvolvimento de um inversor monofásico de baixa potência aplicado a sistemas de transporte. Trabalho de Conclusão de Curso, UNIVANTES. Lajeado, RS; 2008.
+
+VIRTANEN Pauli, et al. e Contribuidores do SciPy 1.0. SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, v. 17, n. 3, p. 261-272. 2020. 
+
+WODJA, Rafal P. Winding Resistance and Winding Power Loss of High-Frequency Power Inductors. Dissertação de PhD, Universidade Estadual de Wright, Ohio. 2012.
+
+XUE, Yaosuo; CHANG, Liuchen; KÆR, Søren Bækhøj; et al. Topologies of Single-Phase Inverters for SmallDistributed Power Generators: An Overview. IEEE Transactions on Power Electronics. v. 19, n. 5. 2004.
+
+YORK, Ben; YU, Wensong; et al. An Integrated Boost Resonant Converter for Photovoltaic Applications. IEEE Transactions on Power Electronics. v. 32, n. 3. 2013.
+
+YU, Yuan; LEE, Fred C.Y; TRINER, James E. Power Converter Design Optimization. IEEE Transactions on Aerospace and Electronic Systems. v. 15, n. 3. 1979.
+
+ZHANG, J; et. al. Decoupled optimization technique for design of switching regulators using genetic algorithms. Anais da IEEE International Conference Circuits and Systems. Geneva, Switzerland, v. 3. pp. 495–498. 2000.
+ 
