@@ -1,3 +1,5 @@
+import inspect
+
 import numpy as np
 
 uo = 4*np.pi*1e-7
@@ -38,11 +40,45 @@ class Component:
     #     return representation
 
 
-class Switch(Component):
+class Semiconductor(Component):
+
+    def __init__(self, Name, rjd):
+        Component.__init__(self, Name)
+        self.rjd = rjd
+
+    def calculate_temperature(self, loss, heat_sink, ta=25):
+        rja = self.rjd + heat_sink.rda
+        temperature = ta + rja * loss
+        return temperature
+
+
+class HeatSink(Component):
+
+    def __init__(self, yaml_data, Name=None):
+        Component.__init__(self, Name)
+        self.Rda = yaml_data['Resistance']
+        self.Attachment_Method = yaml_data['Attachment Method']
+        self.Finned = yaml_data['Finned']
+        if self.Finned:
+            self.Fin_height = yaml_data['Fin Height']
+        keys = list(yaml_data.keys())
+        if 'Length' in keys:
+            self.Length = yaml_data['Length']
+        if 'Width' in keys:
+            self.Width = yaml_data['Width']
+        if 'Diameter' in keys:
+            self.Diameter = yaml_data['Diameter']
+        self.Manufacturer = yaml_data['Manufacturer']
+        self.Mount = yaml_data['Mount']
+        self.Package_Cooled = yaml_data['Package Cooled']
+        self.Shape = yaml_data['Shape']
+
+
+class Switch(Semiconductor):
     type = 'Switch'
 
-    def __init__(self, ton, toff, Rdson, Vmax, Cds=0, Name=None):
-        Component.__init__(self, Name)
+    def __init__(self, ton, toff, Rdson, Vmax, Cds=0, rjd=0, Name=None):
+        Semiconductor.__init__(self, Name, rjd)
         self.Ton = ton
         self.Toff = toff
         self.Rdson = Rdson
@@ -50,14 +86,21 @@ class Switch(Component):
         self.Cds = Cds
 
 
-class Diode(Component):
+class Diode(Semiconductor):
     type = 'Diode'
 
-    def __init__(self, vd, rt, Vmax, Name=None):
-        Component.__init__(self, Name)
+    def __init__(self, vd, rt, Vmax, Imax=0, Imed=0, rjd=0, Name=None):
+        Semiconductor.__init__(self, Name, rjd)
         self.Vd = vd
         self.Rt = rt
         self.Vmax = Vmax
+        self.Imax = Imax
+        self.Imed = Imed
+
+    @staticmethod
+    def from_dict(dict, name=None):
+        new_diode = Diode(float(dict['Vd']), float(dict['Rt']), float(dict['Vmax']), float(dict['Imax']), float(dict['Imed']), Name=name)
+        return new_diode
 
 
 class Capacitor(Component):
@@ -81,6 +124,11 @@ class Cable(Component):
         self.D = D
         self.Rho = rho
         self.Ur = Ur
+
+    @staticmethod
+    def from_dict(dict, name=None):
+        new_cable = Cable(float(dict['Dcu']), float(dict['D']), float(dict['Rho']), float(dict['Ur']), Name=name)
+        return new_cable
 
 
 class Core(Component):

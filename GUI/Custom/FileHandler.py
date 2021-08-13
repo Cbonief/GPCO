@@ -2,10 +2,7 @@ from pathlib import Path
 
 from Converter.Components import *
 
-
-def save_configurations():
-    x = 2
-
+import yaml
 
 class ComponentsReader:
     def __init__(self):
@@ -110,9 +107,11 @@ class ComponentsReader:
 
     def load_all_diodes(self):
         diodes = {}
-        for file_path in Path("Saved Data/Components/Diodes/").glob('**/*.txt'):
-            [diode, name] = self.load_diode(str(file_path))
-            diodes[name] = diode
+        for file_path in Path("Saved Data/Components/Diodes/").glob('**/*.yaml'):
+            with open(file_path, 'r') as stream:
+                loader = yaml.safe_load(stream)
+                for name in loader.keys():
+                    diodes[name] = Diode.from_dict(loader[name], name)
         return diodes
 
     @staticmethod
@@ -135,9 +134,12 @@ class ComponentsReader:
 
     def load_all_cables(self):
         cables = {}
-        for file_path in Path("Saved Data/Components/Cables/").glob('**/*.txt'):
-            [cable, name] = self.load_cable(str(file_path))
-            cables[name] = cable
+        for file_path in Path("Saved Data/Components/Cables/").glob('**/*.yaml'):
+            with open(file_path, 'r') as stream:
+                loader = yaml.safe_load(stream)
+                for name in loader.keys():
+                    cables[name] = Cable.from_dict(loader[name], name)
+        print(cables)
         return cables
 
     @staticmethod
@@ -160,7 +162,7 @@ class ComponentsReader:
 
     def load_all_dissipators(self):
         dissipators = {}
-        for filepath in Path("Saved Data/Components/Dissipators/").glob('**/*.txt'):
+        for filepath in Path("Saved Data/Components/Heat Sinks/").glob('**/*.txt'):
             [cable, name] = self.load_dissipator(str(filepath))
             dissipators[name] = cable
         return dissipators

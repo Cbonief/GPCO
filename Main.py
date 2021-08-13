@@ -48,7 +48,7 @@ class Application(MainWindow):
         available_components_inductor = {}
         for component in available_components_specific:
             if component not in ['Li', 'Lk']:
-                if component is not 'Transformer':
+                if component != 'Transformer':
                     available_components_specific_no_mag[component] = available_components_specific[component]
             else:
                 available_components_inductor[component] = available_components_specific[component]

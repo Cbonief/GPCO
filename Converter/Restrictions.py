@@ -1,48 +1,57 @@
 # Entrance Inductor Restrictions
-def dIin_max(obj, X):
-    dIin = obj.calculated_values['dIin']
-    Iin = obj.calculated_values['Iin']
-    res = (obj.features['dIin_max'] * Iin - dIin)
+def dIin_max(converter, X):
+    dIin = converter.calculated_values['dIin']
+    Iin = converter.calculated_values['Iin']
+    res = (converter.features['dIin_max'] * Iin - dIin)
     return res
 
 
-def bmax_Li(obj, X):
-    res = (obj.features['Bmax']['EntranceInductor'] - obj.calculated_values['BmaxLi'])
+def bmax_Li(converter, X):
+    res = (converter.features['Bmax']['EntranceInductor'] - converter.calculated_values['BmaxLi'])
     return res
 
 
-def AeAw_Li(obj, X):
-    res = obj.entrance_inductor.Core.AeAw - obj.calculated_values[
-        'LiIrms'] * obj.entrance_inductor.Ncond * obj.entrance_inductor.Cable.S / (
-                      obj.safety_parameters['Jmax'] * obj.safety_parameters['ku EntranceInductor'])
+def AeAw_Li(converter, X):
+    res = converter.entrance_inductor.Core.AeAw - converter.calculated_values[
+        'LiIrms'] * converter.entrance_inductor.Ncond * converter.entrance_inductor.Cable.S / (
+                      converter.safety_parameters['Jmax'] * converter.safety_parameters['ku EntranceInductor'])
     return res
 
 
-def JLi(obj, X):
-    res = obj.safety_parameters['Jmax'] - obj.calculated_values['LiIrms'] / (
-                obj.entrance_inductor.Cable.Scu * obj.entrance_inductor.Ncond)
-    print(obj.calculated_values['LiIrms'] / (obj.entrance_inductor.Cable.Scu * obj.entrance_inductor.Ncond),
-          obj.safety_parameters['Jmax'])
+def JLi(converter, X):
+    res = converter.safety_parameters['Jmax'] - converter.calculated_values['LiIrms'] / (
+                converter.entrance_inductor.Cable.Scu * converter.entrance_inductor.Ncond)
     return res
 
 
 # Auxiliary Inductor #
-def bmax_Lk(obj, X):
-    res = (obj.features['Bmax']['AuxiliaryInductor'] - obj.calculated_values['BmaxLk'])
+def bmax_Lk(converter, X):
+    res = (converter.features['Bmax']['AuxiliaryInductor'] - converter.calculated_values['BmaxLk'])
     return res
 
 
-def AeAw_Lk(obj, X):
-    res = obj.auxiliary_inductor.Core.AeAw - obj.calculated_values[
-        'TransformerIrms'] * obj.entrance_inductor.Ncond * obj.auxiliary_inductor.Cable.S / (
-                      obj.safety_parameters['Jmax'] * obj.safety_parameters['ku AuxiliaryInductor'])
+def AeAw_Lk(converter, X):
+    res = converter.auxiliary_inductor.Core.AeAw - converter.calculated_values[
+        'TransformerIrms'] * converter.entrance_inductor.Ncond * converter.auxiliary_inductor.Cable.S / (
+                      converter.safety_parameters['Jmax'] * converter.safety_parameters['ku AuxiliaryInductor'])
     return res
 
 
-def JLk(obj, X):
-    res = obj.safety_parameters['Jmax'] - obj.calculated_values['TransformerIrms'] / (
-                obj.auxiliary_inductor.Cable.Scu * obj.auxiliary_inductor.Ncond)
+def JLk(converter, X):
+    res = converter.safety_parameters['Jmax'] - converter.calculated_values['TransformerIrms'] / (
+                converter.auxiliary_inductor.Cable.Scu * converter.auxiliary_inductor.Ncond)
     return res
+
+
+
+# RESTRIÇÕES DE TEMPERATURA
+def temp_diode(diode, converter, X):
+    return converter.diodes[diode-1].Tmax - converter.calculated_values['temperature']['D'+str(diode)]
+
+
+diode_max_temp = []
+for i in range(1, 3):
+    diode_max_temp.append(lambda converter, x: temp_diode(i, converter, x))
 
 
 def zvs_restriction(converter, X):
@@ -112,7 +121,6 @@ def gain_restriction_2(converter, x):
     LkFs = x[0]*x[2]
     return 100*(LkFs - 1.2*Vo*(0.063*nVi-k2)/k1)
 
-
 def lower_fs_lk_bound_constant(converter):
     Po = converter.features['Po']
     Vo = converter.features['Vo']
@@ -123,7 +131,6 @@ def lower_fs_lk_bound_constant(converter):
     nVi = n*Vi
     k2 = 0.0441*Vo
     return 1.2*Vo*(0.063*nVi-k2)/k1
-
 
 def upper_fs_lk_bound_constant(converter):
     Po = converter.features['Po']

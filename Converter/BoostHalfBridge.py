@@ -61,6 +61,8 @@ class BoostHalfBridgeInverter:
             return self.last_calculated_loss
         else:
             try:
+                for component in self.loss_functions:
+                    self.calculated_values['losses'][component] = 0
                 self.simulate_efficiency_independent_variables(X)
             except ValueError:
                 raise ValueError
@@ -86,6 +88,8 @@ class BoostHalfBridgeInverter:
     # Compensates for the fact that some losses depend of the input current.
     def compensated_total_loss_separate(self, X, activation_table=True):
         try:
+            for component in self.loss_functions:
+                self.calculated_values['losses'][component] = 0
             self.simulate_efficiency_independent_variables(X)
         except ValueError:
             raise ValueError
@@ -110,9 +114,11 @@ class BoostHalfBridgeInverter:
         output = 0
         self.simulate_efficiency_dependent_variables(X, efficiency)
         for component in self.loss_functions:
+            self.calculated_values['losses'][component] = 0
             for loss_type in self.loss_functions[component]:
                 if self.loss_functions_activation_map[component][loss_type]:
                     partial = self.loss_functions[component][loss_type](self, X)
+                    self.calculated_values['losses'][component] += partial
                     output = output + partial
         return output
 
@@ -123,10 +129,12 @@ class BoostHalfBridgeInverter:
         self.simulate_efficiency_dependent_variables(X, efficiency)
         for component in self.loss_functions:
             losses[component] = {}
+            self.calculated_values['losses'][component] = 0
             for loss_type in self.loss_functions[component]:
                 if self.loss_functions_activation_map[component][loss_type]:
                     partial = self.loss_functions[component][loss_type](self, X)
                     losses[component][loss_type] = partial
+                    self.calculated_values['losses'][component] += partial
                     total_loss = total_loss + partial
         return losses, total_loss
 

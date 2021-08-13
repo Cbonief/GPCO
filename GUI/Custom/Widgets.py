@@ -9,8 +9,8 @@ class LabeledInput(QHBoxLayout):
         self.parent = parent
         self.addItem(QSpacerItem(spacing[0], 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
         name_label = QLabel(name + ":")
-        # name_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        name_label.setFixedSize(120, 20)
+        name_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        name_label.setFixedSize(150, 20)
         self.addWidget(name_label)
         self.input_edit = QLineEdit()
         self.input_edit.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)

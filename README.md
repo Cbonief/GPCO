@@ -38,7 +38,7 @@ And <img src="https://render.githubusercontent.com/render/math?math=\small H(X,R
 
 ## 2. Main Algorithm
 
-### 2.1 Genetic Algorithm
+### 2.1 Genetic Optimizer
 As mentioned, the first layer of the algorithm is a simple GA (Genetic Algorithm), such as the one on the Figure 2, where the fitness of each individual is it's efficiency. The variables being optimized by this layer are the discrete components of the power converter: switches, diodes, capacitors and even the cores and cables of any inductor or transformer present on the circuit. Also included in this layer are the number of windings and parallel conductors on the inductors/transformers, both being considered to be integer only. 
 
 *Figure 2 - Genetic Algorithm Flow Chart.*

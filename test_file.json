@@ -14,7 +14,7 @@
       "NEE_42_20"
     ],
     "Cables": [
-      "AWG_23"
+      "AWG23"
     ],
     "Diodes": [
       "HFA04SD60S"
@@ -70,20 +70,20 @@
   1,
   {
     "Core": "NEE_42_20",
-    "Cable": "AWG_23",
+    "Cable": "AWG23",
     "N": 28,
     "Ncond": 7
   },
   {
     "Core": "NEE_20",
-    "Cable": "AWG_23",
+    "Cable": "AWG23",
     "N": 5,
     "Ncond": 8
   },
   {
     "Core": "NEE_30_15",
-    "Primary Cable": "AWG_23",
-    "Secondary Cable": "AWG_23",
+    "Primary Cable": "AWG23",
+    "Secondary Cable": "AWG23",
     "Primary N": 5,
     "Secondary N": 59,
     "Primary Ncond": 8,
